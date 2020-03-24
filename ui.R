@@ -42,7 +42,7 @@ shinyUI(fluidPage(
                sidebarPanel(
                  titlePanel("Location"),
                  selectInput(inputId = "countryFinder",
-                             label = "Select Country/Region:",
+                             label = "Select Canada/Province:",
                              choices = ddReg, 
                              selected = ddNames[1]),
                  h5("Raw case numbers:"),
@@ -77,7 +77,7 @@ shinyUI(fluidPage(
                  sidebarPanel(
                    titlePanel("Location selector"),
                    checkboxGroupInput(inputId = "countryGrowthRate",
-                                      label = "Select Country/Region:",
+                                      label = "Select Canada/Province:",
                                       choices = ddReg,
                                       selected = ddNames[1:3])
                  ),
@@ -96,7 +96,7 @@ shinyUI(fluidPage(
                  sidebarPanel(
                    titlePanel("Location selector"),
                    checkboxGroupInput(inputId = "countryFinderCFI",
-                                      label = "Select Country/Region:",
+                                      label = "Select Canada/Province:",
                                       choices = ddReg, 
                                       selected = ddNames[1:3])
                  ),

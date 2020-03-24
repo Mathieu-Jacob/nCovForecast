@@ -4,9 +4,10 @@
 ##
 ## Purpose of script: Scrape data from gitHub repository established to track nCov20
 ##
-## Author: Ben Phillips
+## Author: Ben Phillips - modified by Mathieu Jacob
 ##
 ## Date Created: 2020-02-07
+## Date mmodified: 2020-03-24
 ##
 ## Copyright (c) Ben Phillips, 2020
 ## Email: phillipsb@unimelb.edu.au
@@ -50,21 +51,37 @@ names(tsD)[!dCols] <- make.names(names(tsD)[!dCols])
 matI<-as.matrix(tsI[, dCols])
 matD<-as.matrix(tsD[, dCols])
 matA<-matI-matD #remove deaths
-  matR <- cbind(matrix(0, nrow = nrow(matA), ncol = 22), matA[, -((ncol(matA)-21):ncol(matA))]) # recovered
+matR <- cbind(matrix(0, nrow = nrow(matA), ncol = 22), matA[, -((ncol(matA)-21):ncol(matA))]) # recovered
 matA <- matA - matR
 
 tsA <- cbind(tsI[,!dCols], matA) # active cases
+tsR <- cbind(tsI[,!dCols], matR) # recovered cases
 
 tsACountry <- countryAgg(tsA) # aggregated to country
 tsACountry <- tsACountry[rev(order(tsACountry[[ncol(tsACountry)-1]])),] # ordered from most to least active cases
 
+##Build Canada only data:
+tsICanada <- SelectCountry(tsI, "Canada")
+tsACanada <- SelectCountry(tsA, "Canada")
+tsRCanada <- SelectCountry(tsR, "Canada")
+tsDCanada <- SelectCountry(tsD, "Canada")
+
+
 ## Define menus
-# get region names with 20 or more cases as of yesterday
-ddNames <- tsACountry$Country[tsACountry[[ncol(tsACountry)-1]]>19]
+ddNames <- tsACanada$Country
 ddReg <- ddNames
 names(ddReg) <- ddNames
 #ddReg <- paste(ddReg, collapse = ", ") # menu specifier
 
 #save(tsI, tsD, tsR, tsA, tsACountry, dates, ddNames, ddReg, file = paste0("dat/cacheData", format(Sys.Date(), format = "%m%d"), ".RData"))
+
+# 
+# yI <- tsICanada %>% filter(Country == input$countryFinder) %>% .[,-1]
+# yA <- tsACanada %>% filter(Country == input$countryFinder) %>% .[,-1]
+# yR <- tsRCanada %>% filter(Country == input$countryFinder) %>% .[,-1]
+# yD <- tsDCanada %>% filter(Country == input$countryFinder) %>% .[,-1]
+# 
+# 
+
 
 

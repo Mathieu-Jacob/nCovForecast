@@ -31,10 +31,10 @@ options(scipen=9)
 shinyServer(function(input, output) {
   ##### Raw stats #####  
   output$rawStats <- renderTable({
-    yA <- tsSub(tsA,tsA$Country.Region %in% input$countryFinder)
-    yD <- tsSub(tsD,tsD$Country.Region %in% input$countryFinder)
-    yI <- tsSub(tsI,tsI$Country.Region %in% input$countryFinder)
-    #yR <- tsSub(tsR,tsR$Country.Region %in% input$countryFinder)
+    yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
+    yD <- tsSub(tsDCanada,tsDCanada$Country %in% input$countryFinder)
+    yI <- tsSub(tsICanada,tsICanada$Country %in% input$countryFinder)
+    #yR <- tsSub(tsR,tsRCanada$Country %in% input$countryFinder)
     nn <-length(yI)
     if (is.na(yA[nn])) nn <- nn-1
     out <- as.integer(c(yI[nn], yD[nn]))
@@ -43,9 +43,9 @@ shinyServer(function(input, output) {
     format(out, big.mark = ",")
   }, rownames = FALSE)
   
-##### Raw plot #####  
+  ##### Raw plot #####  
   output$rawPlot <- renderPlot({
-    yA <- tsSub(tsA,tsA$Country.Region %in% input$countryFinder)
+    yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
     lDat <- projSimple(yA, dates)
     yMax <- max(c(lDat$y[,"fit"], yA), na.rm = TRUE)
     yTxt <- "Confirmed active cases"
@@ -63,9 +63,9 @@ shinyServer(function(input, output) {
     lines(lDat$y[, "upr"]~lDat$x, lty = 2)
   })
   
-##### Log plot #####    
+  ##### Log plot #####    
   output$logPlot <- renderPlot({
-    yA <- tsSub(tsA,tsA$Country.Region %in% input$countryFinder)
+    yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
     lDat <- projSimple(yA, dates)
     yMax <- max(c(lDat$y[,"fit"], yA), na.rm = TRUE)
     yTxt <- "Confirmed active cases (log scale)"
@@ -84,17 +84,17 @@ shinyServer(function(input, output) {
     lines(lDat$y[, "upr"]~lDat$x, lty = 2)
   })
   
-##### Detection rate #####    
+  ##### Detection rate #####    
   output$detRate <- renderText({
-    yD <- tsSub(tsD,tsD$Country.Region %in% input$countryFinder)
-    yI <- tsSub(tsI,tsI$Country.Region %in% input$countryFinder)
+    yD <- tsSub(tsDCanada,tsDCanada$Country %in% input$countryFinder)
+    yI <- tsSub(tsICanada,tsICanada$Country %in% input$countryFinder)
     dR<-round(detRate(yI, yD), 4)
     if (is.na(dR)) "Insufficient data for estimation" else dR
   })
   
-##### Prediction table confirmed #####    
+  ##### Prediction table confirmed #####    
   output$tablePredConf <- renderTable({
-    yA <- tsSub(tsA,tsA$Country.Region %in% input$countryFinder)
+    yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
     lDat <- projSimple(yA, dates)
     nowThen <- format(as.integer(c(tail(yA[!is.na(yA)], 1), tail(lDat$y[,"lwr"],1), tail(lDat$y[,"upr"],1))), big.mark = ",")
     nowThen <- c(nowThen[1], paste(nowThen[2], "-", nowThen[3]))
@@ -103,11 +103,11 @@ shinyServer(function(input, output) {
     nowThen
   }, rownames = FALSE)
   
-##### Prediction table true #####    
+  ##### Prediction table true #####    
   output$tablePredTrue <- renderText({
-    yA <- tsSub(tsA,tsA$Country.Region %in% input$countryFinder)
-    yD <- tsSub(tsD,tsD$Country.Region %in% input$countryFinder)
-    yI <- tsSub(tsI,tsI$Country.Region %in% input$countryFinder)
+    yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
+    yD <- tsSub(tsDCanada,tsDCanada$Country %in% input$countryFinder)
+    yI <- tsSub(tsICanada,tsICanada$Country %in% input$countryFinder)
     dRate <- detRate(yI, yD)
     lDat <- projSimple(yA, dates)
     now <- tail(yA[!is.na(yA)], 1)
@@ -118,9 +118,9 @@ shinyServer(function(input, output) {
     nowTrue
   })
   
-##### Curve-flattenning #####    
+  ##### Curve-flattenning #####    
   output$cfi <- renderPlot({
-    pDat <- subset(tsACountry, tsACountry$Country %in% input$countryFinderCFI)
+    pDat <- subset(tsACanada, tsACanada$Country %in% input$countryFinderCFI)
     pMat<-as.matrix(log(pDat[,-1]))
     row.names(pMat)<-pDat$Country
     cfiDat<-apply(pMat, MARGIN = 1, FUN = "cfi")
@@ -144,9 +144,9 @@ shinyServer(function(input, output) {
            col = clrs,
            bty = "n")
   })
-##### Growth rate #####    
+  ##### Growth rate #####    
   output$growthRate <- renderPlot({
-    pDat <- subset(tsACountry, tsACountry$Country %in% input$countryGrowthRate)
+    pDat <- subset(tsACanada, tsACanada$Country %in% input$countryGrowthRate)
     gRate <- as.matrix(growthRate(pDat))
     clrs<-hcl.colors(length(input$countryGrowthRate))
     dates10 <- dates[(length(pDat)-10+1):length(pDat)]
@@ -161,15 +161,15 @@ shinyServer(function(input, output) {
             args.legend = list(bty = "n", x = "topleft"))
   })
   
-##### Doubling time ##### 
+  ##### Doubling time ##### 
   output$doubTime <- renderText({
-    pDat <- tsSub(tsACountry, tsACountry$Country %in% input$countryFinder)
+    pDat <- tsSub(tsACanada, tsACanada$Country %in% input$countryFinder)
     dTime <- round(doubTime(pDat, dates), 1)
   })
   
-##### Doubling time plot #####    
+  ##### Doubling time plot #####    
   output$doubTimePlot <- renderPlot({
-    pDat <- subset(tsACountry, tsACountry$Country %in% input$countryGrowthRate)
+    pDat <- subset(tsACanada, tsACanada$Country %in% input$countryGrowthRate)
     dTime <- as.matrix(doubTime(pDat))
     dTime[!is.finite(dTime)]<-NA
     clrs<-hcl.colors(length(input$countryGrowthRate))

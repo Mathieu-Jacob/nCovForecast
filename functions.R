@@ -44,6 +44,15 @@ countryAgg<-function(x){
   aggregate(xSelect, by = list(Country = x$Country.Region), FUN = sum)
 }
 
+# aggregates results to province for specific country
+SelectCountry<-function(x, Country){
+  Province <- cbind(Country = x$Province.State[x$Country.Region == Country],
+                         x[x$Country.Region == Country, dCols])
+  
+  CountryTotal <- aggregate(x[x$Country.Region == Country, dCols], by = list(Country = x$Country.Region[x$Country.Region == Country]), FUN = sum)
+  rbind(CountryTotal, Province)
+}
+
 # calculates the curve flatenning index.
   # it is the second derivative of logA wrt t (the change in growth rate) divided by first differential (the current growth rate).
 cfi <- function(active){
