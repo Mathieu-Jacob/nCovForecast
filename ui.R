@@ -1,21 +1,10 @@
 ## ---------------------------
 ##
-## Script name: ui.R
-##
-## Purpose of script:  Specifies user interface for coronaRisk app
-##
-## Author: Ben Phillips
-##
-## Date Created: 2020-03-12
-##
-## Email: phillipsb@unimelb.edu.au
+## Author: https://www.linkedin.com/in/mathieu-jacob/
+## Adapted from: Ben Phillips - phillipsb@unimelb.edu.au
+## Date Created: 2020-03-26
 ##
 ## ---------------------------
-##
-## Notes:
-##   
-##
-## --------------------------
 ## load up the packages we will need 
 library(shiny)
 library(tidyverse)
@@ -36,10 +25,10 @@ options(scipen=9)
 shinyUI(fluidPage(
   
   # Application title
-  titlePanel("Coronavirus 10-day forecast"),
+  titlePanel("Coronavirus Prediction"),
   navbarPage(p("As of", format(dates[length(dates)], "%d %b")),
 ##### 10-day forecast #####             
-      tabPanel("10-day forecast",
+      tabPanel("Model forecast",
              # Sidebar 
              sidebarLayout(
                sidebarPanel(

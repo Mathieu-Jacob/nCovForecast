@@ -1,21 +1,10 @@
 ## ---------------------------
 ##
-## Script name: functions.R
-##
-## Purpose of script: Hold a bunch of functions for coronaRisk app
-##
-## Author: Ben Phillips
-##
-## Date Created: 2020-03-12
-##
-## Email: phillipsb@unimelb.edu.au
+## Author: https://www.linkedin.com/in/mathieu-jacob/
+## Adapted from: Ben Phillips - phillipsb@unimelb.edu.au
+## Date Created: 2020-03-26
 ##
 ## ---------------------------
-##
-## Notes:
-##   
-##
-## --------------------------
 ## load up the packages we will need 
 
 ## ---------------------------

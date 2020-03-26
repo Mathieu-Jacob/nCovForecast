@@ -1,23 +1,10 @@
 ## ---------------------------
 ##
-## Script name: 
-##
-## Purpose of script:
-##
-## Author: Ben Phillips - modified by Mathieu Jacob
-##
-## Date Created: 2020-02-07
-## Date modified: 2020-03-24
-##
-## Copyright (c) Ben Phillips, 2020
-## Email: phillipsb@unimelb.edu.au
+## Author: https://www.linkedin.com/in/mathieu-jacob/
+## Adapted from: Ben Phillips - phillipsb@unimelb.edu.au
+## Date Created: 2020-03-26
 ##
 ## ---------------------------
-##
-## Notes:
-##   
-##
-## --------------------------
 ## load up the packages we will need 
 library(shiny)
 library(tidyverse)
