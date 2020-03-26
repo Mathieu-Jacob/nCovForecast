@@ -22,6 +22,7 @@
 library(shiny)
 library(tidyverse)
 library(plotly)
+library(deSolve)
 ## ---------------------------
 
 ## source files
@@ -61,7 +62,7 @@ shinyServer(function(input, output) {
                        yR)
     row.names(data) <- c()
     
-    model.EXP <- projSimple(yA, dates, proj=60)
+    model.EXP <- projSimple(yA, dates, proj=70)
     
     data.Actual <- data.frame(type ="Actual",
                               dates = dates,
@@ -81,7 +82,7 @@ shinyServer(function(input, output) {
              yaxis = list(title = "Confirmed Active Cases"))
     maxy<-0
     for(R in c(1.3, 1.5, 1.7, 1.9, 2.1, 2.3)){
-      model.SIR <- fit.SIR(data, N=population, R0=R, proj=60)
+      model.SIR <- fit.SIR(data, N=population, R0=R, proj=70)
       maxy <- max(maxy,model.SIR$I)
       p <- p %>% add_lines(data = model.SIR, x = ~dates, y = ~I, name = paste0("SIR - R0=",R), legendgroup = paste0("SIR - R0=",R))
     }
@@ -103,7 +104,7 @@ shinyServer(function(input, output) {
                        yR)
     row.names(data) <- c()
     
-    model.EXP <- projSimple(yA, dates, proj=40)
+    model.EXP <- projSimple(yA, dates, proj=70)
     
     data.Actual <- data.frame(type ="Actual",
                               dates = dates,
@@ -123,13 +124,26 @@ shinyServer(function(input, output) {
              yaxis = list(title = "Confirmed Active Cases"))
     
     for(R in c(1.3, 1.5, 1.7, 1.9, 2.1, 2.3)){
-      model.SIR <- fit.SIR(data, N=population, R0=R, proj=40)
+      model.SIR <- fit.SIR(data, N=population, R0=R, proj=70)
       p <- p %>% add_lines(data = model.SIR, x = ~dates, y = ~I, name = paste0("SIR - R0=",R), legendgroup = paste0("SIR - R0=",R))
     }
     
     logPlot <- p %>% layout(yaxis = list(type = "log"))
     logPlot
   })
+  
+  ##### Event PLanner #####
+  output$EventPlanner <-
+    renderText({
+      #https://github.com/jsweitz/covid-19-event-risk-planner
+      
+      c(
+        '<img src="',
+        "https://2oqz471sa19h3vbwa53m33yj-wpengine.netdna-ssl.com/wp-content/uploads/2020/03/event-risk-assessment-chart-1.jpg",
+        '">'
+      )
+    })
+  
   
   ##### Detection rate #####    
   output$detRate <- renderText({

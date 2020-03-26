@@ -18,7 +18,9 @@
 ## --------------------------
 ## load up the packages we will need 
 library(shiny)
+library(tidyverse)
 library(plotly)
+library(deSolve)
 
 ## ---------------------------
 
@@ -67,7 +69,8 @@ shinyUI(fluidPage(
                # Show a plot of the generated distribution
                mainPanel(
                  plotlyOutput("rawPlot"),
-                 plotlyOutput("logPlot")
+                 plotlyOutput("logPlot"),
+                 htmlOutput("EventPlanner")
                )
              )
       ),
