@@ -79,10 +79,10 @@ detRate<-function(infd, deaths, cfr = 0.033, ttd=17, window=5){
 
 # Simple projection based on growth over last inWindow days
   # returns extended plotting data
-projSimple<-function(rawN, rawTime, inWindow=10){
+projSimple<-function(rawN, rawTime, inWindow=10, proj=10){
   nn <- length(rawN)
   ss <- (nn-inWindow+1):nn
-  x <- c(rawTime[ss], rawTime[nn]+1:inWindow)
+  x <- c(rawTime[ss], rawTime[nn]+1:proj)
   lnN <- log(rawN[ss])
   lnN[is.infinite(lnN)]<-NA
   tIn <- rawTime[ss]
@@ -116,4 +116,41 @@ tsSub <- function(x, subset){
   xSub<-x[subset, dateCols(x)]
   colSums(xSub)
 }
+
+#Fit Sir Model
+fit.SIR <- function(data, N=37590000, R0, proj=40){
+  data.model <- data[data$yI>50,]
+  data.model$time <- 1:nrow(data.model)
+  SIR <- function(time, state, parameters) {
+    # https://stats.stackexchange.com/questions/446712/fitting-sir-model-with-2019-ncov-data-doesnt-conververge
+    par <- as.list(c(state, parameters))
+    ####
+    #### use as change of variables variable
+    #### const = (beta-gamma)
+    #### delta = gamma/beta
+    #### R0 = beta/gamma > 1 
+    #### 
+    #### beta-gamma = beta*(1-delta)
+    #### beta-gamma = beta*(1-1/R0)
+    #### gamma = beta/R0
+    with(par, { 
+      beta  <- const/(1-1/R0)  
+      gamma <- const/(R0-1)  
+      dS <- -(beta * (S/N)      ) * I 
+      dI <-  (beta * (S/N)-gamma) * I 
+      dR <-  (             gamma) * I
+      list(c(dS, dI, dR))
+    })
+  }
+  
+  const <- projSimpleSlope(data.model$yA, data.model$time)[2]
+  
+  
+  init <- c(S = N - data.model$yA[1], I = data.model$yA[1], R = 0)
+  dates.needed <- c(data.model$dates,max(data.model$dates)+1:proj)
+  fit <- ode(y = init, times = 1:length(dates.needed), func = SIR, parms = c(const, R0))
+  fit <- cbind(data.frame(dates = c(data.model$dates,max(data.model$dates)+1:proj)), fit)
+  return(fit)
+}
+
 

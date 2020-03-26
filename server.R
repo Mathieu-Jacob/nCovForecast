@@ -4,10 +4,12 @@
 ##
 ## Purpose of script:
 ##
-## Author: Ben Phillips
+## Author: Ben Phillips - modified by Mathieu Jacob
 ##
-## Date Created: 2020-03-12
+## Date Created: 2020-02-07
+## Date modified: 2020-03-24
 ##
+## Copyright (c) Ben Phillips, 2020
 ## Email: phillipsb@unimelb.edu.au
 ##
 ## ---------------------------
@@ -18,6 +20,8 @@
 ## --------------------------
 ## load up the packages we will need 
 library(shiny)
+library(tidyverse)
+library(plotly)
 ## ---------------------------
 
 ## source files
@@ -34,7 +38,7 @@ shinyServer(function(input, output) {
     yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
     yD <- tsSub(tsDCanada,tsDCanada$Country %in% input$countryFinder)
     yI <- tsSub(tsICanada,tsICanada$Country %in% input$countryFinder)
-    #yR <- tsSub(tsR,tsRCanada$Country %in% input$countryFinder)
+    #yR <- tsSub(tsRCanada,tsRCanada$Country %in% input$countryFinder)
     nn <-length(yI)
     if (is.na(yA[nn])) nn <- nn-1
     out <- as.integer(c(yI[nn], yD[nn]))
@@ -44,44 +48,87 @@ shinyServer(function(input, output) {
   }, rownames = FALSE)
   
   ##### Raw plot #####  
-  output$rawPlot <- renderPlot({
+  output$rawPlot <- renderPlotly({
+    population <- population[population$Country %in% input$countryFinder,"population"]
     yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
-    lDat <- projSimple(yA, dates)
-    yMax <- max(c(lDat$y[,"fit"], yA), na.rm = TRUE)
-    yTxt <- "Confirmed active cases"
-    plot(yA~dates, 
-         xlim = c(min(dates), max(lDat$x)),
-         ylim = c(0, yMax),
-         pch = 19, 
-         bty = "u", 
-         xlab = "Date", 
-         ylab = yTxt,
-         main = input$countryFinder)
-    axis(side = 4)
-    lines(lDat$y[, "fit"]~lDat$x)
-    lines(lDat$y[, "lwr"]~lDat$x, lty = 2)
-    lines(lDat$y[, "upr"]~lDat$x, lty = 2)
+    yD <- tsSub(tsDCanada,tsDCanada$Country %in% input$countryFinder)
+    yI <- tsSub(tsICanada,tsICanada$Country %in% input$countryFinder)
+    yR <- tsSub(tsRCanada,tsRCanada$Country %in% input$countryFinder)
+    data <- data.frame(dates,
+                       yA,
+                       yD,
+                       yI,
+                       yR)
+    row.names(data) <- c()
+    
+    model.EXP <- projSimple(yA, dates, proj=60)
+    
+    data.Actual <- data.frame(type ="Actual",
+                              dates = dates,
+                              yA = yA)
+    data.ExpModel <- data.frame(type ="Exp.Model",
+                                dates = model.EXP$x,
+                                yA = model.EXP$y[,1])
+    
+    p <- plot_ly(data = data.Actual, x = ~dates, y = ~yA) %>%
+      add_markers(name = 'Actual', legendgroup = "Actual") %>%
+      add_lines(data = data.ExpModel, x = ~dates, y = ~yA, name = 'Exponential Model', legendgroup = "Exponential") %>%
+      # add_lines(data = model.SIR, x = ~dates, y = ~I, name = 'SIR Model', legendgroup = "SIR") %>%
+      # add_lines(data = data.ExpModelLbound, x = ~dates, y = ~yA, name = 'Exponential Model - Lower Bound', legendgroup = "Exponential", showlegend=TRUE) %>%
+      # add_lines(data = data.ExpModelUbound, x = ~dates, y = ~yA, name = 'Exponential Model - Upper Bound', legendgroup = "Exponential", showlegend=TRUE) %>%
+      layout(title = paste0(input$countryFinder,': Active Cases Over Time'),
+             xaxis = list(title = "Dates"),
+             yaxis = list(title = "Confirmed Active Cases"))
+    maxy<-0
+    for(R in c(1.3, 1.5, 1.7, 1.9, 2.1, 2.3)){
+      model.SIR <- fit.SIR(data, N=population, R0=R, proj=60)
+      maxy <- max(maxy,model.SIR$I)
+      p <- p %>% add_lines(data = model.SIR, x = ~dates, y = ~I, name = paste0("SIR - R0=",R), legendgroup = paste0("SIR - R0=",R))
+    }
+    p %>% layout(yaxis = list(range=c(0,maxy)))
+    
   })
   
   ##### Log plot #####    
-  output$logPlot <- renderPlot({
+  output$logPlot <- renderPlotly({
+    population <- population[population$Country %in% input$countryFinder,"population"]
     yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
-    lDat <- projSimple(yA, dates)
-    yMax <- max(c(lDat$y[,"fit"], yA), na.rm = TRUE)
-    yTxt <- "Confirmed active cases (log scale)"
-    plot((yA+0.1)~dates, 
-         xlim = c(min(dates), max(lDat$x)),
-         ylim = c(1, yMax),
-         log = "y",
-         pch = 19, 
-         bty = "u", 
-         xlab = "Date", 
-         ylab = yTxt,
-         main = input$countryFinder)
-    axis(side=4)
-    lines(lDat$y[, "fit"]~lDat$x)
-    lines(lDat$y[, "lwr"]~lDat$x, lty = 2)
-    lines(lDat$y[, "upr"]~lDat$x, lty = 2)
+    yD <- tsSub(tsDCanada,tsDCanada$Country %in% input$countryFinder)
+    yI <- tsSub(tsICanada,tsICanada$Country %in% input$countryFinder)
+    yR <- tsSub(tsRCanada,tsRCanada$Country %in% input$countryFinder)
+    data <- data.frame(dates,
+                       yA,
+                       yD,
+                       yI,
+                       yR)
+    row.names(data) <- c()
+    
+    model.EXP <- projSimple(yA, dates, proj=40)
+    
+    data.Actual <- data.frame(type ="Actual",
+                              dates = dates,
+                              yA = yA)
+    data.ExpModel <- data.frame(type ="Exp.Model",
+                                dates = model.EXP$x,
+                                yA = model.EXP$y[,1])
+    
+    p <- plot_ly(data = data.Actual, x = ~dates, y = ~yA) %>%
+      add_markers(name = 'Actual', legendgroup = "Actual") %>%
+      add_lines(data = data.ExpModel, x = ~dates, y = ~yA, name = 'Exponential Model', legendgroup = "Exponential") %>%
+      # add_lines(data = model.SIR, x = ~dates, y = ~I, name = 'SIR Model', legendgroup = "SIR") %>%
+      # add_lines(data = data.ExpModelLbound, x = ~dates, y = ~yA, name = 'Exponential Model - Lower Bound', legendgroup = "Exponential", showlegend=TRUE) %>%
+      # add_lines(data = data.ExpModelUbound, x = ~dates, y = ~yA, name = 'Exponential Model - Upper Bound', legendgroup = "Exponential", showlegend=TRUE) %>%
+      layout(title = paste0(input$countryFinder,': Active Cases Over Time'),
+             xaxis = list(title = "Dates"),
+             yaxis = list(title = "Confirmed Active Cases"))
+    
+    for(R in c(1.3, 1.5, 1.7, 1.9, 2.1, 2.3)){
+      model.SIR <- fit.SIR(data, N=population, R0=R, proj=40)
+      p <- p %>% add_lines(data = model.SIR, x = ~dates, y = ~I, name = paste0("SIR - R0=",R), legendgroup = paste0("SIR - R0=",R))
+    }
+    
+    logPlot <- p %>% layout(yaxis = list(type = "log"))
+    logPlot
   })
   
   ##### Detection rate #####    

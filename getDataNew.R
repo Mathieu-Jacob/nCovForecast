@@ -7,7 +7,7 @@
 ## Author: Ben Phillips - modified by Mathieu Jacob
 ##
 ## Date Created: 2020-02-07
-## Date mmodified: 2020-03-24
+## Date modified: 2020-03-24
 ##
 ## Copyright (c) Ben Phillips, 2020
 ## Email: phillipsb@unimelb.edu.au
@@ -47,6 +47,10 @@ names(tsI)[!dCols] <- make.names(names(tsI)[!dCols])
 names(tsD)[!dCols] <- make.names(names(tsD)[!dCols])
 #names(tsT)[!dCols] <- make.names(names(tsT)[!dCols])
 
+## Filter for Canada
+tsI <- tsI[tsI$Country.Region == "Canada",]
+tsD <- tsD[tsD$Country.Region == "Canada",]
+
 ## add recovery lag -- assumes all cases recover at 22 days
 matI<-as.matrix(tsI[, dCols])
 matD<-as.matrix(tsD[, dCols])
@@ -57,8 +61,8 @@ matA <- matA - matR
 tsA <- cbind(tsI[,!dCols], matA) # active cases
 tsR <- cbind(tsI[,!dCols], matR) # recovered cases
 
-tsACountry <- countryAgg(tsA) # aggregated to country
-tsACountry <- tsACountry[rev(order(tsACountry[[ncol(tsACountry)-1]])),] # ordered from most to least active cases
+# tsACountry <- countryAgg(tsA) # aggregated to country
+# tsACountry <- tsACountry[rev(order(tsACountry[[ncol(tsACountry)-1]])),] # ordered from most to least active cases
 
 ##Build Canada only data:
 tsICanada <- SelectCountry(tsI, "Canada")
@@ -83,5 +87,33 @@ names(ddReg) <- ddNames
 # 
 # 
 
+input <- list()
+input$countryFinder <- "Canada"
+input$countryGrowthRate <- "Canada"
+input$countryFinderCFI <- "Canada"
 
+population <- c(14446515,
+                8433301,
+                5020302,
+                4345737,
+                1360396,
+                1168423,
+                965382,
+                772094,
+                523790,
+                154748,
+                37654671)
+Prov<- c("Ontario",
+                      "Quebec",
+                      "British Columbia",
+                      "Alberta",
+                      "Manitoba",
+                      "Saskatchewan",
+                      "Nova Scotia",
+                      "New Brunswick",
+                      "Newfoundland and Labrador",
+                      "Prince Edward Island",
+                      "Canada")
+population <- data.frame(Country=Prov,
+                        population = population)
 

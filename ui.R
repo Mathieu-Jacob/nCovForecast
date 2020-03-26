@@ -18,6 +18,7 @@
 ## --------------------------
 ## load up the packages we will need 
 library(shiny)
+library(plotly)
 
 ## ---------------------------
 
@@ -65,8 +66,8 @@ shinyUI(fluidPage(
                
                # Show a plot of the generated distribution
                mainPanel(
-                 plotOutput("rawPlot"),
-                 plotOutput("logPlot")
+                 plotlyOutput("rawPlot"),
+                 plotlyOutput("logPlot")
                )
              )
       ),
