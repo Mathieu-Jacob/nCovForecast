@@ -33,6 +33,17 @@ countryAgg<-function(x){
   aggregate(xSelect, by = list(Country = x$Country.Region), FUN = sum)
 }
 
+
+# aggregates results to country & select regions to keep
+SelectRegion<-function(x, keep){
+  Province <- cbind(Country = x$Region [!is.na(x$Region )],
+                    x[!is.na(x$Region ), dCols])
+  
+  CountryTotal <- aggregate(x[, dCols], by = list(Country = x$Country), FUN = sum)
+  out <- rbind(CountryTotal, Province)
+  out[out$Country %in% keep,]
+}
+
 # aggregates results to province for specific country
 SelectCountry<-function(x, Country){
   Province <- cbind(Country = x$Province.State[x$Country.Region == Country],
@@ -132,7 +143,8 @@ fit.SIR <- function(data, N=37590000, R0, proj=40){
     })
   }
   
-  const <- projSimpleSlope(data.model$yA, data.model$time)[2]
+  nbpoints = ifelse(length(data.model$yA)<10,length(data.model$yA),10)
+  const <- projSimpleSlope(data.model$yA, data.model$time, inWindow=nbpoints)[2]
   
   
   init <- c(S = N - data.model$yA[1], I = data.model$yA[1], R = 0)

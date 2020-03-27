@@ -37,6 +37,8 @@ shinyUI(fluidPage(
                              label = "Select Canada/Province:",
                              choices = ddReg, 
                              selected = ddNames[1]),
+                 h5("Population:"),
+                 tableOutput(outputId = "population"),
                  h5("Raw case numbers:"),
                  tableOutput(outputId = "rawStats"),
                  h5("Active cases:"),

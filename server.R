@@ -22,6 +22,10 @@ options(scipen=9)
 # Define server logic 
 shinyServer(function(input, output) {
   ##### Raw stats #####  
+  output$population <- renderText({
+    population <- population[population$Country %in% input$countryFinder,"population"]
+    format(population, big.mark = ",")
+  })
   output$rawStats <- renderTable({
     yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
     yD <- tsSub(tsDCanada,tsDCanada$Country %in% input$countryFinder)
