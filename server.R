@@ -41,7 +41,7 @@ shinyServer(function(input, output) {
   
   ##### Raw plot #####  
   output$rawPlot <- renderPlotly({
-    population <- population[population$Country %in% input$countryFinder,"population"]
+    pop <- population[population$Country %in% input$countryFinder,"population"]
     yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
     yD <- tsSub(tsDCanada,tsDCanada$Country %in% input$countryFinder)
     yI <- tsSub(tsICanada,tsICanada$Country %in% input$countryFinder)
@@ -73,7 +73,7 @@ shinyServer(function(input, output) {
              yaxis = list(title = "Confirmed Active Cases"))
     maxy<-0
     for(R in c(1.3, 1.5, 1.7, 1.9, 2.1, 2.3)){
-      model.SIR <- fit.SIR(data, N=population, R0=R, proj=70)
+      model.SIR <- fit.SIR(data, N=pop, R0=R, proj=70, Region.fit=input$countryFinder)
       maxy <- max(maxy,model.SIR$I)
       p <- p %>% add_lines(data = model.SIR, x = ~dates, y = ~I, name = paste0("SIR - R0=",R), legendgroup = paste0("SIR - R0=",R))
     }
@@ -83,7 +83,7 @@ shinyServer(function(input, output) {
   
   ##### Log plot #####    
   output$logPlot <- renderPlotly({
-    population <- population[population$Country %in% input$countryFinder,"population"]
+    pop <- population[population$Country %in% input$countryFinder,"population"]
     yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
     yD <- tsSub(tsDCanada,tsDCanada$Country %in% input$countryFinder)
     yI <- tsSub(tsICanada,tsICanada$Country %in% input$countryFinder)
@@ -113,12 +113,14 @@ shinyServer(function(input, output) {
       layout(title = paste0(input$countryFinder,': Active Cases Over Time'),
              xaxis = list(title = "Dates"),
              yaxis = list(title = "Confirmed Active Cases"))
-    
+    maxy<-0
     for(R in c(1.3, 1.5, 1.7, 1.9, 2.1, 2.3)){
-      model.SIR <- fit.SIR(data, N=population, R0=R, proj=70)
+      model.SIR <- fit.SIR(data, N=pop, R0=R, proj=70, Region.fit=input$countryFinder)
+      maxy <- max(maxy,model.SIR$I)
       p <- p %>% add_lines(data = model.SIR, x = ~dates, y = ~I, name = paste0("SIR - R0=",R), legendgroup = paste0("SIR - R0=",R))
     }
-    
+    p %>% layout(yaxis = list(range=c(0,maxy)))
+
     logPlot <- p %>% layout(yaxis = list(type = "log"))
     logPlot
   })

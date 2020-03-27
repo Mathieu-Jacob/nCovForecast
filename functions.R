@@ -118,9 +118,23 @@ tsSub <- function(x, subset){
 }
 
 #Fit Sir Model
-fit.SIR <- function(data, N=37590000, R0, proj=40){
-  data.model <- data[data$yI>50,]
-  data.model$time <- 1:nrow(data.model)
+
+fit.SIR <- function(data, N=37590000, R0, proj=40, Region.fit){
+  start.time <- sum(data$yI>=0 & data$yI<=50) + 1
+  if(Region.fit == "United States"){
+    start.time <- max(start.time, which(data$dates == "2020-03-04"))
+  }
+  if(Region.fit == "Ontario"){
+    start.time <- max(start.time, which(data$dates == "2020-03-17"))
+  }
+  if(Region.fit == "Massachusetts"){
+    start.time <- max(start.time, which(data$dates == "2020-03-18"))
+  }
+
+  
+  data.model <- data[1:nrow(data) >= start.time,]
+  data.model$time <- start.time:(start.time+nrow(data.model)-1)
+  
   SIR <- function(time, state, parameters) {
     # https://stats.stackexchange.com/questions/446712/fitting-sir-model-with-2019-ncov-data-doesnt-conververge
     par <- as.list(c(state, parameters))
@@ -144,14 +158,11 @@ fit.SIR <- function(data, N=37590000, R0, proj=40){
   }
   
   nbpoints = ifelse(length(data.model$yA)<10,length(data.model$yA),10)
-  const <- projSimpleSlope(data.model$yA, data.model$time, inWindow=nbpoints)[2]
-  
+  const <- projSimpleSlope(data.model$yA, 1:nrow(data.model), inWindow=nbpoints)[2]
   
   init <- c(S = N - data.model$yA[1], I = data.model$yA[1], R = 0)
   dates.needed <- c(data.model$dates,max(data.model$dates)+1:proj)
   fit <- ode(y = init, times = 1:length(dates.needed), func = SIR, parms = c(const, R0))
-  fit <- cbind(data.frame(dates = c(data.model$dates,max(data.model$dates)+1:proj)), fit)
+  fit <- cbind(data.frame(dates = dates.needed), fit)
   return(fit)
 }
-
-
