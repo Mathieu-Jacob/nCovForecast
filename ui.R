@@ -24,6 +24,7 @@ options(scipen=9)
 # Define UI
 shinyUI(fluidPage(
   
+  
   # Application title
   titlePanel("Coronavirus Prediction"),
   navbarPage(p("As of", format(dates[length(dates)], "%d %b")),
