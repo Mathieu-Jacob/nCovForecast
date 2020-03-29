@@ -15,7 +15,9 @@ library(deSolve)
 
 ## load up our functions into memory
 ## source files
-source("getDataNew.R")
+source("getDataNew.CovidData.R")
+# source("getDataNew.JHU.R")
+source("functions.R")
 
 ## ---------------------------
 ## ---------------------------
