@@ -1,0 +1,37 @@
+---
+title: "About"
+author: "Mathieu Jacob"
+date: "29/03/2020"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+---
+
+## 1 - About
+Sources codes to generate this website is available on Github. It is inspired from Benflips and adapted to add predictive models & tailored for Canada & US.
+
+Github: https://github.com/Mathieu-Jacob/nCovForecast
+
+Github: https://github.com/benflips/nCovForecast
+
+## 2 - Data Sources
+Data updates daily around 8pm EDT (GMT-4)
+Two data sources are currently available with this website:
+#### 2.1 - Johns Hopkins University
+JHU is providing Covid19 data updated daily for various countries. Unfortunately, the US states & county detailed data is not updated since March 23.
+
+Github: https://github.com/CSSEGISandData/COVID-19/
+
+Live Dashboard: https://gisanddata.maps.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6
+
+#### 2.2 -Covid Data API
+Covid Data API combines the JHU data with the NY Times data. NY Times compiles the detailed data for US states & county. However, there ould be delays in the data being reported and sometimes discrepency with the most recent data provided in news.
+
+Github: https://coviddata.github.io/coviddata/
+
+Live Dashboard: https://www.covidstats.com/
+
+## 3 - Model
+In Progress
