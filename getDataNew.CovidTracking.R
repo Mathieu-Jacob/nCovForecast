@@ -2,7 +2,7 @@
 # Author: https://www.linkedin.com/in/mathieu-jacob/
 # Date Created: 2020-03-26
 ########################################
-# Data Source: https://github.com/CSSEGISandData/COVID-19/ 
+# Data Source: https://covidtracking.com/
 
 
 ########################################
@@ -11,35 +11,40 @@
 library("readr")
 library("tidyverse")
 
-getDataNew.JHU <- function(){
+getDataNew.CovidTracking <- function(){
   ########################################
   # 1 - Read Data
   ########################################
   # Soure
-  tsI.URL <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"
-  tsD.URL <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"
-  tsR.URL <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv"
+  file <- "http://covidtracking.com/api/states/daily.csv"
   
-  tsI<-read_csv(file = tsI.URL)
-  tsD<-read_csv(file = tsD.URL)
-  tsR<-read_csv(file = tsR.URL)
+  data <- read_csv(file)
+  data$Country.Region <- "United States"
+  data$Province.State <- data$state
+  tsI <- data %>% select(dateChecked, Country.Region, Province.State, positive) %>% spread(key=dateChecked, value=positive, fill =0)
+  tsD <- data %>% select(dateChecked, Country.Region, Province.State, death) %>% spread(key=dateChecked, value=death, fill =0)
+  tsH <- data %>% select(dateChecked, Country.Region, Province.State, hospitalized) %>% spread(key=dateChecked, value=hospitalized, fill =0)
+  tsT <- data %>% select(dateChecked, Country.Region, Province.State, total) %>% spread(key=dateChecked, value=total, fill =0)
+  
   
   ########################################
   # 2 - Tidy Up Data
   ########################################
   ## get Date range
   dCols<-dateCols(tsI)
-  dates<-as.Date(colnames(tsI)[dCols], format = "%m/%d/%y")
+  dates<-as.Date(colnames(tsI)[dCols], format = "%Y-%m-%d")
   
   ## Tidy up names
   names(tsI)[!dCols] <- make.names(names(tsI)[!dCols])
   names(tsD)[!dCols] <- make.names(names(tsD)[!dCols])
-  names(tsR)[!dCols] <- make.names(names(tsR)[!dCols])
+  names(tsT)[!dCols] <- make.names(names(tsT)[!dCols])
+  names(tsH)[!dCols] <- make.names(names(tsH)[!dCols])
+  
   
   names(tsI)[dCols] <- as.character(dates)
   names(tsD)[dCols] <- as.character(dates)
-  names(tsR)[dCols] <- as.character(dates)
-  
+  names(tsT)[dCols] <- as.character(dates)
+  names(tsH)[dCols] <- as.character(dates)
   ########################################
   # 3 - Augment Data, Filter Country, Aggregate by Country
   ########################################
@@ -75,3 +80,6 @@ getDataNew.JHU <- function(){
   
   return(rbind(tsI, tsA, tsR, tsD))
 }
+
+
+

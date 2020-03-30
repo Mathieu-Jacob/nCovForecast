@@ -13,8 +13,7 @@ library(deSolve)
 ## ---------------------------
 
 ## source files
-source("getDataNew.CovidData.R")
-# source("getDataNew.JHU.R")
+source("getDataNew.R")
 source("functions.R")
 
 ## ---------------------------
@@ -23,16 +22,136 @@ options(scipen=9)
 
 # Define server logic 
 shinyServer(function(input, output) {
-  ##### Raw stats #####  
+
+  ##### Raw plot #####  
+  output$rawPlot <- renderPlotly({
+    pop <- population[population$Country %in% input$countryFinder,"population"]
+    yA <- tsSub(data, "tsA", input$countryFinder)
+    yD <- tsSub(data, "tsD", input$countryFinder)
+    yI <- tsSub(data, "tsI", input$countryFinder)
+    yR <- tsSub(data, "tsR", input$countryFinder)
+    projection.period <- 70
+    data <- data.frame(dates = c(dates,max(dates)+1:projection.period),
+                       yA = c(yA,rep(NA,projection.period)),
+                       yD = c(yD,rep(NA,projection.period)),
+                       yI = c(yI,rep(NA,projection.period)),
+                       yR = c(yR,rep(NA,projection.period)))
+    row.names(data) <- c()
+    data <- add.exponential(data, inWindow=10, proj=70)
+    data <- add.SIR(data, N=pop, R0=1.3)
+    data <- add.SIR(data, N=pop, R0=1.5)
+    data <- add.SIR(data, N=pop, R0=1.7)
+    data <- add.SIR(data, N=pop, R0=1.9)
+    data <- add.SIR(data, N=pop, R0=2.1)
+    data <- add.SIR(data, N=pop, R0=2.3)
+    maxy <- max(data$yA.SIR.R2.3[!is.na(data$yA.SIR.R2.3)])
+    maxy <- 10^floor(log10(maxy)) * ceiling(maxy/10^floor(log10(maxy)))
+    
+    p <- plot_ly(data=data) %>% 
+      add_markers(name = 'Actual - Active', x = ~dates, y = ~yA) %>%
+      add_markers(name = 'Actual - Deaths', x = ~dates, y = ~yD) %>%
+      add_lines(name = 'Exponential - Active', x = ~dates, y = ~yA.exp) %>% 
+      add_lines(name = 'SIR R0=1.3 - Active', x = ~dates, y = ~yA.SIR.R1.3) %>% 
+      add_lines(name = 'SIR R0=1.5 - Active', x = ~dates, y = ~yA.SIR.R1.5) %>% 
+      add_lines(name = 'SIR R0=1.7 - Active', x = ~dates, y = ~yA.SIR.R1.7) %>% 
+      add_lines(name = 'SIR R0=1.9 - Active', x = ~dates, y = ~yA.SIR.R1.9) %>% 
+      add_lines(name = 'SIR R0=2.1 - Active', x = ~dates, y = ~yA.SIR.R2.1) %>% 
+      add_lines(name = 'SIR R0=2.3 - Active', x = ~dates, y = ~yA.SIR.R2.3) %>% 
+      layout(title = paste0(input$countryFinder,': Projection Over Time'),
+             xaxis = list(title = "Dates"),
+             yaxis = list(title = "Number of People", range=c(0,maxy)) )
+    p
+    
+  })
+  
+  ##### Log plot #####    
+  output$logPlot <- renderPlotly({
+    pop <- population[population$Country %in% input$countryFinder,"population"]
+    yA <- tsSub(data, "tsA", input$countryFinder)
+    yD <- tsSub(data, "tsD", input$countryFinder)
+    yI <- tsSub(data, "tsI", input$countryFinder)
+    yR <- tsSub(data, "tsR", input$countryFinder)
+    projection.period <- 70
+    data <- data.frame(dates = c(dates,max(dates)+1:projection.period),
+                       yA = c(yA,rep(NA,projection.period)),
+                       yD = c(yD,rep(NA,projection.period)),
+                       yI = c(yI,rep(NA,projection.period)),
+                       yR = c(yR,rep(NA,projection.period)))
+    row.names(data) <- c()
+    data <- add.exponential(data, inWindow=10, proj=70)
+    data <- add.SIR(data, N=pop, R0=1.3)
+    data <- add.SIR(data, N=pop, R0=1.5)
+    data <- add.SIR(data, N=pop, R0=1.7)
+    data <- add.SIR(data, N=pop, R0=1.9)
+    data <- add.SIR(data, N=pop, R0=2.1)
+    data <- add.SIR(data, N=pop, R0=2.3)
+    
+    maxy <- max(data$yA.SIR.R2.3[!is.na(data$yA.SIR.R2.3)])
+    maxy <- 10^floor(log10(maxy)) * ceiling(maxy/10^floor(log10(maxy)))
+    
+    p <- plot_ly(data=data) %>% 
+      add_markers(name = 'Actual - Active', x = ~dates, y = ~yA) %>%
+      add_markers(name = 'Actual - Deaths', x = ~dates, y = ~yD) %>%
+      add_lines(name = 'Exponential - Active', x = ~dates, y = ~yA.exp) %>% 
+      add_lines(name = 'SIR R0=1.3 - Active', x = ~dates, y = ~yA.SIR.R1.3) %>% 
+      add_lines(name = 'SIR R0=1.5 - Active', x = ~dates, y = ~yA.SIR.R1.5) %>% 
+      add_lines(name = 'SIR R0=1.7 - Active', x = ~dates, y = ~yA.SIR.R1.7) %>% 
+      add_lines(name = 'SIR R0=1.9 - Active', x = ~dates, y = ~yA.SIR.R1.9) %>% 
+      add_lines(name = 'SIR R0=2.1 - Active', x = ~dates, y = ~yA.SIR.R2.1) %>% 
+      add_lines(name = 'SIR R0=2.3 - Active', x = ~dates, y = ~yA.SIR.R2.3) %>% 
+      layout(title = paste0(input$countryFinder,': Projection Over Time'),
+             xaxis = list(title = "Dates"),
+             yaxis = list(title = "Number of People", range=c(0,maxy)) )
+    p
+
+    maxy <- max(data$yA.SIR.R2.3[!is.na(data$yA.SIR.R2.3)])
+    maxy <- ceiling(log10(maxy))
+    logPlot <- p %>% layout(yaxis = list(type = "log", range=c(0,maxy)))
+    logPlot
+  })
+  
+  # Downloadable csv of data ----
+  datasetInput <- reactive({
+    pop <- population[population$Country %in% input$countryFinder,"population"]
+    yA <- tsSub(data, "tsA", input$countryFinder)
+    yD <- tsSub(data, "tsD", input$countryFinder)
+    yI <- tsSub(data, "tsI", input$countryFinder)
+    yR <- tsSub(data, "tsR", input$countryFinder)
+    projection.period <- 70
+    data <- data.frame(dates = c(dates,max(dates)+1:projection.period),
+                       yA = c(yA,rep(NA,projection.period)),
+                       yD = c(yD,rep(NA,projection.period)),
+                       yI = c(yI,rep(NA,projection.period)),
+                       yR = c(yR,rep(NA,projection.period)))
+    row.names(data) <- c()
+    data <- add.exponential(data, inWindow=10, proj=70)
+    data <- add.SIR(data, N=pop, R0=1.3)
+    data <- add.SIR(data, N=pop, R0=1.5)
+    data <- add.SIR(data, N=pop, R0=1.7)
+    data <- add.SIR(data, N=pop, R0=1.9)
+    data <- add.SIR(data, N=pop, R0=2.1)
+    data <- add.SIR(data, N=pop, R0=2.3)
+  })
+  output$downloadData <- downloadHandler(
+    filename = paste0("CovidPrediction_Data_",format(Sys.time(),"%Y%m%d"),".csv"),
+    content = function(file) {
+      write.csv(datasetInput(), file, row.names = FALSE)
+    }
+  )
+  
   output$population <- renderText({
     population <- population[population$Country %in% input$countryFinder,"population"]
     format(population, big.mark = ",")
   })
+  
+  
+  ##### Raw stats ##### 
   output$rawStats <- renderTable({
-    yA <- tsSub(tsA,tsA$Country %in% input$countryFinder)
-    yD <- tsSub(tsD,tsD$Country %in% input$countryFinder)
-    yI <- tsSub(tsI,tsI$Country %in% input$countryFinder)
-    #yR <- tsSub(tsR,tsR$Country %in% input$countryFinder)
+    
+    yA <- tsSub(data, "tsA", input$countryFinder)
+    yD <- tsSub(data, "tsD", input$countryFinder)
+    yI <- tsSub(data, "tsI", input$countryFinder)
+    # yR <- tsSub(data, "tsR", input$countryFinder)
     nn <-length(yI)
     if (is.na(yA[nn])) nn <- nn-1
     out <- as.integer(c(yI[nn], yD[nn]))
@@ -40,92 +159,6 @@ shinyServer(function(input, output) {
     colnames(out) <- c("Total", "Deaths")
     format(out, big.mark = ",")
   }, rownames = FALSE)
-  
-  ##### Raw plot #####  
-  output$rawPlot <- renderPlotly({
-    pop <- population[population$Country %in% input$countryFinder,"population"]
-    yA <- tsSub(tsA,tsA$Country %in% input$countryFinder)
-    yD <- tsSub(tsD,tsD$Country %in% input$countryFinder)
-    yI <- tsSub(tsI,tsI$Country %in% input$countryFinder)
-    yR <- tsSub(tsR,tsR$Country %in% input$countryFinder)
-    data <- data.frame(dates,
-                       yA,
-                       yD,
-                       yI,
-                       yR)
-    row.names(data) <- c()
-    
-    model.EXP <- projSimple(yA, dates, proj=70)
-    
-    data.Actual <- data.frame(type ="Actual",
-                              dates = dates,
-                              yA = yA)
-    data.ExpModel <- data.frame(type ="Exp.Model",
-                                dates = model.EXP$x,
-                                yA = model.EXP$y[,1])
-    
-    p <- plot_ly(data = data.Actual, x = ~dates, y = ~yA) %>%
-      add_markers(name = 'Actual', legendgroup = "Actual") %>%
-      add_lines(data = data.ExpModel, x = ~dates, y = ~yA, name = 'Exponential Model', legendgroup = "Exponential") %>%
-      # add_lines(data = model.SIR, x = ~dates, y = ~I, name = 'SIR Model', legendgroup = "SIR") %>%
-      # add_lines(data = data.ExpModelLbound, x = ~dates, y = ~yA, name = 'Exponential Model - Lower Bound', legendgroup = "Exponential", showlegend=TRUE) %>%
-      # add_lines(data = data.ExpModelUbound, x = ~dates, y = ~yA, name = 'Exponential Model - Upper Bound', legendgroup = "Exponential", showlegend=TRUE) %>%
-      layout(title = paste0(input$countryFinder,': Active Cases Over Time'),
-             xaxis = list(title = "Dates"),
-             yaxis = list(title = "Confirmed Active Cases"))
-    maxy<-0
-    for(R in c(1.3, 1.5, 1.7, 1.9, 2.1, 2.3)){
-      model.SIR <- fit.SIR(data, N=pop, R0=R, proj=70, Region.fit=input$countryFinder)
-      maxy <- max(maxy,model.SIR$I)
-      p <- p %>% add_lines(data = model.SIR, x = ~dates, y = ~I, name = paste0("SIR - R0=",R), legendgroup = paste0("SIR - R0=",R))
-    }
-    p %>% layout(yaxis = list(range=c(0,maxy)))
-    
-  })
-  
-  ##### Log plot #####    
-  output$logPlot <- renderPlotly({
-    pop <- population[population$Country %in% input$countryFinder,"population"]
-    yA <- tsSub(tsA,tsA$Country %in% input$countryFinder)
-    yD <- tsSub(tsD,tsD$Country %in% input$countryFinder)
-    yI <- tsSub(tsI,tsI$Country %in% input$countryFinder)
-    yR <- tsSub(tsR,tsR$Country %in% input$countryFinder)
-    data <- data.frame(dates,
-                       yA,
-                       yD,
-                       yI,
-                       yR)
-    row.names(data) <- c()
-    
-    model.EXP <- projSimple(yA, dates, proj=70)
-    
-    data.Actual <- data.frame(type ="Actual",
-                              dates = dates,
-                              yA = yA)
-    data.ExpModel <- data.frame(type ="Exp.Model",
-                                dates = model.EXP$x,
-                                yA = model.EXP$y[,1])
-    
-    p <- plot_ly(data = data.Actual, x = ~dates, y = ~yA) %>%
-      add_markers(name = 'Actual', legendgroup = "Actual") %>%
-      add_lines(data = data.ExpModel, x = ~dates, y = ~yA, name = 'Exponential Model', legendgroup = "Exponential") %>%
-      # add_lines(data = model.SIR, x = ~dates, y = ~I, name = 'SIR Model', legendgroup = "SIR") %>%
-      # add_lines(data = data.ExpModelLbound, x = ~dates, y = ~yA, name = 'Exponential Model - Lower Bound', legendgroup = "Exponential", showlegend=TRUE) %>%
-      # add_lines(data = data.ExpModelUbound, x = ~dates, y = ~yA, name = 'Exponential Model - Upper Bound', legendgroup = "Exponential", showlegend=TRUE) %>%
-      layout(title = paste0(input$countryFinder,': Active Cases Over Time'),
-             xaxis = list(title = "Dates"),
-             yaxis = list(title = "Confirmed Active Cases"))
-    maxy<-0
-    for(R in c(1.3, 1.5, 1.7, 1.9, 2.1, 2.3)){
-      model.SIR <- fit.SIR(data, N=pop, R0=R, proj=70, Region.fit=input$countryFinder)
-      maxy <- max(maxy,model.SIR$I)
-      p <- p %>% add_lines(data = model.SIR, x = ~dates, y = ~I, name = paste0("SIR - R0=",R), legendgroup = paste0("SIR - R0=",R))
-    }
-    p %>% layout(yaxis = list(range=c(0,maxy)))
-
-    logPlot <- p %>% layout(yaxis = list(type = "log"))
-    logPlot
-  })
   
   ##### Event PLanner #####
   output$EventPlanner <-
@@ -142,15 +175,20 @@ shinyServer(function(input, output) {
   
   ##### Detection rate #####    
   output$detRate <- renderText({
-    yD <- tsSub(tsD,tsD$Country %in% input$countryFinder)
-    yI <- tsSub(tsI,tsI$Country %in% input$countryFinder)
+    # yA <- tsSub(data, "tsA", input$countryFinder)
+    yD <- tsSub(data, "tsD", input$countryFinder)
+    yI <- tsSub(data, "tsI", input$countryFinder)
+    # yR <- tsSub(data, "tsR", input$countryFinder)
     dR<-round(detRate(yI, yD), 4)
     if (is.na(dR)) "Insufficient data for estimation" else dR
   })
   
   ##### Prediction table confirmed #####    
   output$tablePredConf <- renderTable({
-    yA <- tsSub(tsA,tsA$Country %in% input$countryFinder)
+    yA <- tsSub(data, "tsA", input$countryFinder)
+    # yD <- tsSub(data, "tsD", input$countryFinder)
+    # yI <- tsSub(data, "tsI", input$countryFinder)
+    # yR <- tsSub(data, "tsR", input$countryFinder)
     lDat <- projSimple(yA, dates)
     nowThen <- format(as.integer(c(tail(yA[!is.na(yA)], 1), tail(lDat$y[,"lwr"],1), tail(lDat$y[,"upr"],1))), big.mark = ",")
     nowThen <- c(nowThen[1], paste(nowThen[2], "-", nowThen[3]))
@@ -161,9 +199,10 @@ shinyServer(function(input, output) {
   
   ##### Prediction table true #####    
   output$tablePredTrue <- renderText({
-    yA <- tsSub(tsA,tsA$Country %in% input$countryFinder)
-    yD <- tsSub(tsD,tsD$Country %in% input$countryFinder)
-    yI <- tsSub(tsI,tsI$Country %in% input$countryFinder)
+    yA <- tsSub(data, "tsA", input$countryFinder)
+    yD <- tsSub(data, "tsD", input$countryFinder)
+    yI <- tsSub(data, "tsI", input$countryFinder)
+    # yR <- tsSub(data, "tsR", input$countryFinder)
     dRate <- detRate(yI, yD)
     lDat <- projSimple(yA, dates)
     now <- tail(yA[!is.na(yA)], 1)
@@ -176,7 +215,7 @@ shinyServer(function(input, output) {
   
   ##### Curve-flattenning #####    
   output$cfi <- renderPlot({
-    pDat <- subset(tsA, tsA$Country %in% input$countryFinderCFI)
+    pDat <- tsSub(data, "tsA", input$countryFinderCFI, sumcols=FALSE)
     pMat<-as.matrix(log(pDat[,-1]))
     row.names(pMat)<-pDat$Country
     cfiDat<-apply(pMat, MARGIN = 1, FUN = "cfi")
@@ -202,7 +241,7 @@ shinyServer(function(input, output) {
   })
   ##### Growth rate #####    
   output$growthRate <- renderPlot({
-    pDat <- subset(tsA, tsA$Country %in% input$countryGrowthRate)
+    pDat <- tsSub(data, "tsA", input$countryGrowthRate, sumcols=FALSE)
     gRate <- as.matrix(growthRate(pDat))
     clrs<-hcl.colors(length(input$countryGrowthRate))
     dates10 <- dates[(length(pDat)-10+1):length(pDat)]
@@ -219,13 +258,13 @@ shinyServer(function(input, output) {
   
   ##### Doubling time ##### 
   output$doubTime <- renderText({
-    pDat <- tsSub(tsA, tsA$Country %in% input$countryFinder)
+    pDat <- tsSub(data, "tsA", input$countryFinder, sumcols=TRUE)
     dTime <- round(doubTime(pDat, dates), 1)
   })
   
   ##### Doubling time plot #####    
   output$doubTimePlot <- renderPlot({
-    pDat <- subset(tsA, tsA$Country %in% input$countryGrowthRate)
+    pDat <- tsSub(data, "tsA", input$countryGrowthRate, sumcols=FALSE)
     dTime <- as.matrix(doubTime(pDat))
     dTime[!is.finite(dTime)]<-NA
     clrs<-hcl.colors(length(input$countryGrowthRate))

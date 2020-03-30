@@ -22,15 +22,43 @@ SelectRegion<-function(x, keep){
   out[out$Country %in% keep,]
 }
 
+#Fill missing coluns between 2 data.fram
+fill.missing <- function(data.missing, missing, fill){
+  if(length(missing) > 0){
+    data.to.add <- matrix(fill,nrow=nrow(data.missing), ncol=length(missing))
+    colnames(data.to.add) <- missing
+    data.new <- cbind(data.missing, data.to.add)
+  }else{
+    data.new <- data.missing
+  }
+  dCols<-dateCols(data.new)
+  data.new <- cbind(data.new[,!dCols], data.new[,dCols][,order(names(data.new[,dCols]))])
+  data.new
+}
+
 ########################################
 # Server Functions
 ########################################
+# To subset time series data and aggregate totals
+tsSub <- function(data, ts.type, Country.set, sumcols=TRUE){
+  data.filtered <- data %>% filter(data.type == ts.type, Country %in% Country.set)
+
+  if(sumcols){
+    data.filtered <- data.filtered[,dateCols(data.filtered)]
+    data.filtered <- colSums(data.filtered)
+  }else{
+    Country <- data.filtered$Country
+    data.filtered <- cbind(Country,data.filtered[,dateCols(data.filtered)])
+  }
+  data.filtered
+}
+
+
 # calculates doubling time over the last inWindow days.
 doubTime <- function(cases, time, inWindow = 10){
   r <- projSimpleSlope(cases, time)[2]
   log(2)/r
 }
-
 
 # growth rate
 growthRate <- function(cases, inWindow=10){
@@ -39,7 +67,6 @@ growthRate <- function(cases, inWindow=10){
   rate <- numeric(length(ss))
   rate[ss] <- (cases[ss] - cases[ss-1]) / cases[ss-1]
 }
-
 
 # calculates the curve flatenning index.
   # it is the second derivative of logA wrt t (the change in growth rate) divided by first differential (the current growth rate).
@@ -65,48 +92,150 @@ detRate<-function(infd, deaths, cfr = 0.033, ttd=17, window=5){
   out
 }
 
+
+
+
+
+plot.actual <- function(data){
+  p <- plot_ly(data = filter(data, type == "Actual")) %>% 
+    layout(title = paste0(input$countryFinder,': Projection'),
+           xaxis = list(title = "Dates"),
+           yaxis = list(title = "Number of People")) %>% 
+    add_markers(name = 'Actual - Active', x = ~dates, y = ~Infected) %>%
+    add_markers(name = 'Actual - Deaths', x = ~dates, y = ~Deaths) %>%
+    add_markers(name = 'Actual - Removed', x = ~dates, y = ~Removed)
+  p
+}
+
+
 # Simple projection based on growth over last inWindow days
-  # returns extended plotting data
-projSimple<-function(rawN, rawTime, inWindow=10, proj=10){
-  nn <- length(rawN)
-  ss <- (nn-inWindow+1):nn
-  x <- c(rawTime[ss], rawTime[nn]+1:proj)
-  lnN <- log(rawN[ss])
-  lnN[is.infinite(lnN)]<-NA
-  tIn <- rawTime[ss]
-  mFit <- lm(lnN~tIn)
-  extFit <- predict(mFit, newdata = list(tIn = x), interval = "confidence")
-  y <- exp(extFit)
-  list(x=x, y=y)
+# returns extended plotting data
+add.exponential <- function(data, inWindow=10, proj=10){
+  max.actual <- max(which(!is.na(data$yA)))
+  id.fit <- (max.actual - inWindow + 1):max.actual
+  dates.fit <- data$dates[id.fit]
+  lnActive <- log(data$yA[id.fit])
+  lnActive[is.infinite(lnActive)] <- NA
+  model.exp <- lm(lnActive~dates.fit)
+  
+  dates.predict <- c(dates.fit, max(dates.fit)+1:proj)
+  yA.exp <- exp(predict(model.exp, newdata = list(dates.fit = dates.predict)))
+  yA.exp <- data.frame(dates = dates.predict,
+                       yA.exp = round(yA.exp))
+  data <- left_join(data, yA.exp)
+  data
+}
+exponential.slope <- function(data, inWindow=10){
+  max.actual <- max(which(!is.na(data$yA)))
+  id.fit <- (max.actual - inWindow + 1):max.actual
+  dates.fit <- data$dates[id.fit]
+  lnActive <- log(data$yA[id.fit])
+  lnActive[is.infinite(lnActive)] <- NA
+  model.exp <- lm(lnActive~dates.fit)
+  coefficients(model.exp)[2]
 }
 
-# Simple projection based on growth over last inWindow days
-# returns coefficients
-projSimpleSlope<-function(rawN, rawTime, inWindow=10){
-  nn <- length(rawN)
-  ss <- (nn-inWindow+1):nn
-  x <- c(rawTime[ss], rawTime[nn]+1:inWindow)
-  lnN <- log(rawN[ss])
-  lnN[is.infinite(lnN)]<-NA
-  tIn <- rawTime[ss]
-  mFit <- lm(lnN~tIn)
-  coefficients(mFit)
+add.SIR <- function(data, N=pop, R0=R, inWindow=10){
+  Region.fit = input$countryFinder
+  end.time <- max(which(!is.na(data$yA)))
+  start.time <- data$dates[min(which(data$yA>=50))]
+  start.time <- which(data$dates == start.time)
+  if(Region.fit %in% c("US", "United States")){
+    start.time <- max(start.time, which(data$dates == "2020-03-18"))
+  }
+  if(Region.fit %in% c("FL", "Florida")){
+    start.time <- max(start.time, which(data$dates == "2020-03-15"))
+  }
+  if(Region.fit %in% c("MA", "Massachusetts")){
+    start.time <- max(start.time, which(data$dates == "2020-03-16"))
+  }
+  if(Region.fit %in% c("NJ", "New Jersey")){
+    start.time <- max(start.time, which(data$dates == "2020-03-18"))
+  }
+  if(Region.fit %in% c("NY", "New York")){
+    start.time <- max(start.time, which(data$dates == "2020-03-20"))
+  }
+  if(Region.fit %in% c("US", "United States")){
+    start.time <- max(start.time, which(data$dates == "2020-03-04"))
+  }
+  if(Region.fit == "Ontario"){
+    start.time <- max(start.time, which(data$dates == "2020-03-17"))
+  }
+  if(Region.fit %in% c("MA", "Massachusetts")){
+    start.time <- max(start.time, which(data$dates == "2020-03-18"))
+  }
+
+  id.fit <- start.time:end.time
+  
+  SIR <- function(time, state, parameters) {
+    # https://stats.stackexchange.com/questions/446712/fitting-sir-model-with-2019-ncov-data-doesnt-conververge
+    par <- as.list(c(state, parameters))
+    ####
+    #### use as change of variables variable
+    #### const = (beta-gamma)
+    #### delta = gamma/beta
+    #### R0 = beta/gamma > 1 
+    #### 
+    #### beta-gamma = beta*(1-delta)
+    #### beta-gamma = beta*(1-1/R0)
+    #### gamma = beta/R0
+    with(par, { 
+      beta  <- const/(1-1/R0)  
+      gamma <- const/(R0-1)  
+      dS <- -(beta * (S/N)      ) * I 
+      dI <-  (beta * (S/N)-gamma) * I 
+      dR <-  (             gamma) * I
+      list(c(dS, dI, dR))
+    })
+  }
+  
+  
+  nbpoints = ifelse(length(id.fit)<inWindow,length(id.fit),inWindow)
+  id.predict <- start.time:nrow(data)
+  const <- exponential.slope(data, inWindow=nbpoints)
+
+
+  
+  dates.predict <- data$dates[start.time:nrow(data)]
+  
+  init <- c(S = N - data$yI[start.time] - data$yR[start.time] - data$yD[start.time], I = data$yA[start.time], R = data$yR[start.time])
+  
+  fit <- round(ode(y = init, times = id.predict, func = SIR, parms = c(const, R0)))[,-1]
+  colnames(fit) <- paste0(c("yS.SIR.R", "yA.SIR.R", "yR.SIR.R"),R0)
+  fit <- cbind(data.frame(dates=dates.predict), fit)
+  data <- left_join(data, fit)
+  data
 }
 
 
 
-# To subset time series data and aggregate totals
-tsSub <- function(x, subset){
-  xSub<-x[subset, dateCols(x)]
-  colSums(xSub)
-}
+
+
+
 
 #Fit SIR Model
 fit.SIR <- function(data, N=37590000, R0, proj=40, Region.fit){
   start.time <- sum(data$yI>=0 & data$yI<=50) + 1
   if(Region.fit %in% c("US", "United States")){
+    start.time <- max(start.time, which(data$dates == "2020-03-18"))
+  }
+  if(Region.fit %in% c("FL", "Florida")){
+    start.time <- max(start.time, which(data$dates == "2020-03-15"))
+  }
+  if(Region.fit %in% c("MA", "Massachusetts")){
+    start.time <- max(start.time, which(data$dates == "2020-03-16"))
+  }
+  if(Region.fit %in% c("NJ", "New Jersey")){
+    start.time <- max(start.time, which(data$dates == "2020-03-18"))
+  }
+  if(Region.fit %in% c("NY", "New York")){
+    start.time <- max(start.time, which(data$dates == "2020-03-20"))
+  }
+  if(Region.fit %in% c("US", "United States")){
     start.time <- max(start.time, which(data$dates == "2020-03-04"))
   }
+  
+  
   if(Region.fit == "Ontario"){
     start.time <- max(start.time, which(data$dates == "2020-03-17"))
   }
@@ -153,93 +282,31 @@ fit.SIR <- function(data, N=37590000, R0, proj=40, Region.fit){
   return(fit)
 }
 
-#Fit SEIR Model
-fit.SEIR <- function(data, N=37590000, R0, proj=40, Region.fit){
-  start.time <- sum(data$yI>=0 & data$yI<=50) + 1
-  if(Region.fit %in% c("US", "United States")){
-    start.time <- max(start.time, which(data$dates == "2020-03-04"))
-  }
-  if(Region.fit == "Ontario"){
-    start.time <- max(start.time, which(data$dates == "2020-03-17"))
-  }
-  if(Region.fit == "Massachusetts"){
-    start.time <- max(start.time, which(data$dates == "2020-03-18"))
-  }
-  
-  
-  data.model <- data[1:nrow(data) >= start.time,]
-  data.model$time <- start.time:(start.time+nrow(data.model)-1)
-  
-  SIR <- function(time, state, parameters) {
-    # https://stats.stackexchange.com/questions/446712/fitting-sir-model-with-2019-ncov-data-doesnt-conververge
-    par <- as.list(c(state, parameters))
-    ####
-    #### use as change of variables variable
-    #### const = (beta-gamma)
-    #### delta = gamma/beta
-    #### R0 = beta/gamma > 1 
-    #### 
-    #### beta-gamma = beta*(1-delta)
-    #### beta-gamma = beta*(1-1/R0)
-    #### gamma = beta/R0
-    with(par, { 
-      beta  <- const/(1-1/R0)  
-      gamma <- const/(R0-1)  
-      dS <- -(beta * (S/N)      ) * I 
-      dI <-  (beta * (S/N)-gamma) * I 
-      dR <-  (             gamma) * I
-      list(c(dS, dI, dR))
-    })
-  }
-  
-  nbpoints = ifelse(length(data.model$yA)<10,length(data.model$yA),10)
-  const <- projSimpleSlope(data.model$yA, 1:nrow(data.model), inWindow=nbpoints)[2]
-  
-  init <- c(S = N - data.model$yA[1], I = data.model$yA[1], R = 0)
-  dates.needed <- c(data.model$dates,max(data.model$dates)+1:proj)
-  fit <- ode(y = init, times = 1:length(dates.needed), func = SIR, parms = c(const, R0))
-  fit <- cbind(data.frame(dates = dates.needed), fit)
-  return(fit)
+
+# Simple projection based on growth over last inWindow days
+# returns extended plotting data
+projSimple<-function(rawN, rawTime, inWindow=10, proj=10){
+  nn <- length(rawN)
+  ss <- (nn-inWindow+1):nn
+  x <- c(rawTime[ss], rawTime[nn]+1:proj)
+  lnN <- log(rawN[ss])
+  lnN[is.infinite(lnN)]<-NA
+  tIn <- rawTime[ss]
+  mFit <- lm(lnN~tIn)
+  extFit <- predict(mFit, newdata = list(tIn = x), interval = "confidence")
+  y <- exp(extFit)
+  list(x=x, y=y)
 }
 
-
-
-
-plot.SEIR <- function(){
-  pop <- population[population$Country %in% input$countryFinder,"population"]
-  yA <- tsSub(tsACanada,tsACanada$Country %in% input$countryFinder)
-  yD <- tsSub(tsDCanada,tsDCanada$Country %in% input$countryFinder)
-  yI <- tsSub(tsICanada,tsICanada$Country %in% input$countryFinder)
-  yR <- tsSub(tsRCanada,tsRCanada$Country %in% input$countryFinder)
-  data <- data.frame(dates,
-                     yA,
-                     yD,
-                     yI,
-                     yR)
-  row.names(data) <- c()
-  
-  
-  data.Actual <- data.frame(dates = dates,
-                            yA = yA,
-                            yD = yD,
-                            yR = yR + yD)
-  
-  p <- plot_ly(data = data.Actual, x = ~dates, y = ~yA) %>%
-    add_markers(name = 'Infected - Actual', legendgroup = "Infected - Actual") %>%
-    add_markers(data = data.Actual, x = ~dates, y = ~yD, name = 'Deaths - Actual', legendgroup = "Deaths - Actual") %>%
-    add_markers(data = data.Actual, x = ~dates, y = ~yR, name = 'Removed - Actual', legendgroup = "Removed - Actual") %>%
-    add_lines(data = data.ExpModel, x = ~dates, y = ~yA, name = 'Exponential Model', legendgroup = "Exponential") %>%
-    # add_lines(data = model.SIR, x = ~dates, y = ~I, name = 'SIR Model', legendgroup = "SIR") %>%
-    # add_lines(data = data.ExpModelLbound, x = ~dates, y = ~yA, name = 'Exponential Model - Lower Bound', legendgroup = "Exponential", showlegend=TRUE) %>%
-    # add_lines(data = data.ExpModelUbound, x = ~dates, y = ~yA, name = 'Exponential Model - Upper Bound', legendgroup = "Exponential", showlegend=TRUE) %>%
-    layout(title = paste0(input$countryFinder,': Active Cases Over Time'),
-           xaxis = list(title = "Dates"),
-           yaxis = list(title = "Confirmed Active Cases"))
-  maxy<-0
-  for(R in c(1.3, 1.5, 1.7, 1.9, 2.1, 2.3)){
-    model.SIR <- fit.SIR(data, N=pop, R0=R, proj=70, Region.fit=input$countryFinder)
-    maxy <- max(maxy,model.SIR$I)
-    p <- p %>% add_lines(data = model.SIR, x = ~dates, y = ~I, name = paste0("SIR - R0=",R), legendgroup = paste0("SIR - R0=",R))
-  }
-  p %>% layout(yaxis = list(range=c(0,maxy)))
+# Simple projection based on growth over last inWindow days
+# returns coefficients
+projSimpleSlope<-function(rawN, rawTime, inWindow=10){
+  nn <- length(rawN)
+  ss <- (nn-inWindow+1):nn
+  x <- c(rawTime[ss], rawTime[nn]+1:inWindow)
+  lnN <- log(rawN[ss])
+  lnN[is.infinite(lnN)]<-NA
+  tIn <- rawTime[ss]
+  mFit <- lm(lnN~tIn)
+  coefficients(mFit)
 }

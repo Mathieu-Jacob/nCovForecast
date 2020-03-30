@@ -10,13 +10,13 @@ library(shiny)
 library(tidyverse)
 library(plotly)
 library(deSolve)
+library(rmarkdown)
 
 ## ---------------------------
 
 ## load up our functions into memory
 ## source files
-source("getDataNew.CovidData.R")
-# source("getDataNew.JHU.R")
+source("getDataNew.R")
 source("functions.R")
 
 ## ---------------------------
@@ -56,8 +56,8 @@ shinyUI(fluidPage(
                  hr(),
                  p("Take this last number with a grain of salt; it is rough.  But low detection indicates that there are many more deaths in the country than there should be given reported case numbers (so there must be more cases than are reported)."),
                  p("Active cases are total number of infections minus deaths and recoveries."),
-                 p("For more information, see", 
-                      a("here.", href = "https://blphillipsresearch.wordpress.com/2020/03/12/coronavirus-forecast/", target="_blank"))
+                 titlePanel("Download Data"),
+                 downloadButton("downloadData", "Download")
                ),
                
                # Show a plot of the generated distribution
@@ -107,7 +107,13 @@ shinyUI(fluidPage(
                         a("here.", href = "https://blphillipsresearch.wordpress.com/2020/03/12/coronavirus-forecast/", target="_blank")))
                  )
                )
-      )
-      
+      ),
+##### CFI ##### 
+    tabPanel("About",
+             mainPanel(
+               includeMarkdown("About.Rmd")
+             )
+)
+
   )
 ))
