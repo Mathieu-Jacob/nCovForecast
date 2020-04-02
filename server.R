@@ -21,10 +21,10 @@ options(scipen=9)
 
 
 # Define server logic 
-shinyServer(function(input, output) {
-
-  ##### Raw plot #####  
-  output$rawPlot <- renderPlotly({
+shinyServer <- function(input, output) {
+  
+  ##### Data #####  
+  GetModels <- reactive({
     pop <- population[population$Country %in% input$countryFinder,"population"]
     yA <- tsSub(data, "tsA", input$countryFinder)
     yD <- tsSub(data, "tsD", input$countryFinder)
@@ -44,6 +44,13 @@ shinyServer(function(input, output) {
     data <- add.SIR(data, N=pop, R0=1.9)
     data <- add.SIR(data, N=pop, R0=2.1)
     data <- add.SIR(data, N=pop, R0=2.3)
+    data
+  })
+  
+  ##### Raw plot #####  
+  output$rawPlot <- renderPlotly({
+    data <- GetModels()
+    
     maxy <- max(data$yA.SIR.R2.3[!is.na(data$yA.SIR.R2.3)])
     maxy <- 10^floor(log10(maxy)) * ceiling(maxy/10^floor(log10(maxy)))
     
@@ -66,25 +73,7 @@ shinyServer(function(input, output) {
   
   ##### Log plot #####    
   output$logPlot <- renderPlotly({
-    pop <- population[population$Country %in% input$countryFinder,"population"]
-    yA <- tsSub(data, "tsA", input$countryFinder)
-    yD <- tsSub(data, "tsD", input$countryFinder)
-    yI <- tsSub(data, "tsI", input$countryFinder)
-    yR <- tsSub(data, "tsR", input$countryFinder)
-    projection.period <- 70
-    data <- data.frame(dates = c(dates,max(dates)+1:projection.period),
-                       yA = c(yA,rep(NA,projection.period)),
-                       yD = c(yD,rep(NA,projection.period)),
-                       yI = c(yI,rep(NA,projection.period)),
-                       yR = c(yR,rep(NA,projection.period)))
-    row.names(data) <- c()
-    data <- add.exponential(data, inWindow=10, proj=70)
-    data <- add.SIR(data, N=pop, R0=1.3)
-    data <- add.SIR(data, N=pop, R0=1.5)
-    data <- add.SIR(data, N=pop, R0=1.7)
-    data <- add.SIR(data, N=pop, R0=1.9)
-    data <- add.SIR(data, N=pop, R0=2.1)
-    data <- add.SIR(data, N=pop, R0=2.3)
+    data <- GetModels()
     
     maxy <- max(data$yA.SIR.R2.3[!is.na(data$yA.SIR.R2.3)])
     maxy <- 10^floor(log10(maxy)) * ceiling(maxy/10^floor(log10(maxy)))
@@ -103,115 +92,82 @@ shinyServer(function(input, output) {
              xaxis = list(title = "Dates"),
              yaxis = list(title = "Number of People", range=c(0,maxy)) )
     p
-
+    
     maxy <- max(data$yA.SIR.R2.3[!is.na(data$yA.SIR.R2.3)])
     maxy <- ceiling(log10(maxy))
     logPlot <- p %>% layout(yaxis = list(type = "log", range=c(0,maxy)))
     logPlot
   })
   
-  # Downloadable csv of data ----
-  datasetInput <- reactive({
-    pop <- population[population$Country %in% input$countryFinder,"population"]
-    yA <- tsSub(data, "tsA", input$countryFinder)
-    yD <- tsSub(data, "tsD", input$countryFinder)
-    yI <- tsSub(data, "tsI", input$countryFinder)
-    yR <- tsSub(data, "tsR", input$countryFinder)
-    projection.period <- 70
-    data <- data.frame(dates = c(dates,max(dates)+1:projection.period),
-                       yA = c(yA,rep(NA,projection.period)),
-                       yD = c(yD,rep(NA,projection.period)),
-                       yI = c(yI,rep(NA,projection.period)),
-                       yR = c(yR,rep(NA,projection.period)))
-    row.names(data) <- c()
-    data <- add.exponential(data, inWindow=10, proj=70)
-    data <- add.SIR(data, N=pop, R0=1.3)
-    data <- add.SIR(data, N=pop, R0=1.5)
-    data <- add.SIR(data, N=pop, R0=1.7)
-    data <- add.SIR(data, N=pop, R0=1.9)
-    data <- add.SIR(data, N=pop, R0=2.1)
-    data <- add.SIR(data, N=pop, R0=2.3)
-  })
+  ##### DownloadTable ##### 
   output$downloadData <- downloadHandler(
     filename = paste0("CovidPrediction_Data_",format(Sys.time(),"%Y%m%d"),".csv"),
     content = function(file) {
-      write.csv(datasetInput(), file, row.names = FALSE)
-    }
-  )
-  
-  output$population <- renderText({
-    population <- population[population$Country %in% input$countryFinder,"population"]
-    format(population, big.mark = ",")
-  })
-  
-  
-  ##### Raw stats ##### 
-  output$rawStats <- renderTable({
-    
-    yA <- tsSub(data, "tsA", input$countryFinder)
-    yD <- tsSub(data, "tsD", input$countryFinder)
-    yI <- tsSub(data, "tsI", input$countryFinder)
-    # yR <- tsSub(data, "tsR", input$countryFinder)
-    nn <-length(yI)
-    if (is.na(yA[nn])) nn <- nn-1
-    out <- as.integer(c(yI[nn], yD[nn]))
-    dim(out) <-c(1,2)
-    colnames(out) <- c("Total", "Deaths")
-    format(out, big.mark = ",")
-  }, rownames = FALSE)
-  
-  ##### Event PLanner #####
-  output$EventPlanner <-
-    renderText({
-      #https://github.com/jsweitz/covid-19-event-risk-planner
-      
-      c(
-        '<img src="',
-        "https://2oqz471sa19h3vbwa53m33yj-wpengine.netdna-ssl.com/wp-content/uploads/2020/03/event-risk-assessment-chart-1.jpg",
-        '">'
-      )
+      write.csv(GetModels(), file, row.names = FALSE)
     })
   
   
-  ##### Detection rate #####    
-  output$detRate <- renderText({
-    # yA <- tsSub(data, "tsA", input$countryFinder)
-    yD <- tsSub(data, "tsD", input$countryFinder)
-    yI <- tsSub(data, "tsI", input$countryFinder)
-    # yR <- tsSub(data, "tsR", input$countryFinder)
+  
+  ##### Statistics ##### 
+  output$KeyMetrics <- renderTable({
+    data <- GetModels()
+    pop <- population[population$Country %in% input$countryFinder,"population"]
+    slope <- round(exponential.slope(data, inWindow=10),4)
+    
+    Latest.A <- data$yA %>% .[!is.na(.)] %>% .[length(.)]
+    Latest.D <- data$yD %>% .[!is.na(.)] %>% .[length(.)]
+    Latest.I <- data$yI %>% .[!is.na(.)] %>% .[length(.)]
+    Latest.R <- data$yR %>% .[!is.na(.)] %>% .[length(.)]
+    
+    pDat <- data[!is.na(data$yA),c("dates","yA")]
+    dTime <- round(doubTime(pDat$yA, pDat$dates), 1)
+    
+    out <- c(format(pop, big.mark=","),
+             format(Latest.I, big.mark=","),
+             format(Latest.A, big.mark=","),
+             format(Latest.D, big.mark=","),
+             format(Latest.R, big.mark=","),
+             slope,
+             dTime)
+    dim(out) <-c(length(out), 1)
+    rownames(out) <- c("Population", "Infected", "Active", "Deaths", "Recovered", "Exponential Growth Slope", "Doubling Time")
+    out
+  }, rownames = TRUE, colnames = FALSE)
+  
+  
+  ##### Event PLanner #####
+  output$EventPlanner <- renderText({
+    #https://github.com/jsweitz/covid-19-event-risk-planner
+    c('<img src="', "https://2oqz471sa19h3vbwa53m33yj-wpengine.netdna-ssl.com/wp-content/uploads/2020/03/event-risk-assessment-chart-1.jpg", '">')
+  })
+  
+  
+  ##### Detection rate #####   
+  output$detRate <- renderTable({
+    data <- GetModels()
+
+    yA <- data$yA %>% .[!is.na(.)]
+    yD <- data$yD %>% .[!is.na(.)]
+    yI <- data$yI %>% .[!is.na(.)]
+    
     dR<-round(detRate(yI, yD), 4)
     if (is.na(dR)) "Insufficient data for estimation" else dR
-  })
+    
+    Latest.I <- data$yI %>% .[!is.na(.)] %>% .[length(.)]
+    Latest.I.True <- format(round(Latest.I/dR, 0), big.mark = ",")
+   
+    
+    out <- c(dR, Latest.I.True)
+    dim(out) <-c(length(out), 1)
+    rownames(out) <- c("Estimated proportion of cases detected:",
+                       "Possible true number of cases now given imperfect detection:")
+    out
+    
+
+    
+  }, rownames = TRUE, colnames = FALSE)
   
-  ##### Prediction table confirmed #####    
-  output$tablePredConf <- renderTable({
-    yA <- tsSub(data, "tsA", input$countryFinder)
-    # yD <- tsSub(data, "tsD", input$countryFinder)
-    # yI <- tsSub(data, "tsI", input$countryFinder)
-    # yR <- tsSub(data, "tsR", input$countryFinder)
-    lDat <- projSimple(yA, dates)
-    nowThen <- format(as.integer(c(tail(yA[!is.na(yA)], 1), tail(lDat$y[,"lwr"],1), tail(lDat$y[,"upr"],1))), big.mark = ",")
-    nowThen <- c(nowThen[1], paste(nowThen[2], "-", nowThen[3]))
-    dim(nowThen) <- c(1, 2)
-    colnames(nowThen)<-c("Now", "In 10 days (min-max)")
-    nowThen
-  }, rownames = FALSE)
   
-  ##### Prediction table true #####    
-  output$tablePredTrue <- renderText({
-    yA <- tsSub(data, "tsA", input$countryFinder)
-    yD <- tsSub(data, "tsD", input$countryFinder)
-    yI <- tsSub(data, "tsI", input$countryFinder)
-    # yR <- tsSub(data, "tsR", input$countryFinder)
-    dRate <- detRate(yI, yD)
-    lDat <- projSimple(yA, dates)
-    now <- tail(yA[!is.na(yA)], 1)
-    nowTrue <- format(round(now/dRate, 0), big.mark = ",")
-    #nowThenTrue <- c(round(nowThenTrue[1],0), paste(round(nowThenTrue[2],0), "-", round(nowThenTrue[3],0)))
-    #dim(nowThenTrue) <- c(1, 2)
-    #colnames(nowThenTrue)<-c("Now", "In 10 days (min-max)")
-    nowTrue
-  })
   
   ##### Curve-flattenning #####    
   output$cfi <- renderPlot({
@@ -239,6 +195,7 @@ shinyServer(function(input, output) {
            col = clrs,
            bty = "n")
   })
+  
   ##### Growth rate #####    
   output$growthRate <- renderPlot({
     pDat <- tsSub(data, "tsA", input$countryGrowthRate, sumcols=FALSE)
@@ -256,27 +213,16 @@ shinyServer(function(input, output) {
             args.legend = list(bty = "n", x = "topleft"))
   })
   
-  ##### Doubling time ##### 
-  output$doubTime <- renderText({
-    pDat <- tsSub(data, "tsA", input$countryFinder, sumcols=TRUE)
-    dTime <- round(doubTime(pDat, dates), 1)
-  })
   
-  ##### Doubling time plot #####    
-  output$doubTimePlot <- renderPlot({
-    pDat <- tsSub(data, "tsA", input$countryGrowthRate, sumcols=FALSE)
-    dTime <- as.matrix(doubTime(pDat))
-    dTime[!is.finite(dTime)]<-NA
-    clrs<-hcl.colors(length(input$countryGrowthRate))
-    dates10 <- dates[(length(pDat)-10+1):length(pDat)]
-    counts <- table(dTime)
-    barplot(dTime,
-            main="Doubling time",
-            xlab="Date", 
-            ylab="Doubling time (days)",
-            beside=TRUE,
-            col = clrs,
-            legend = input$countryGrowthRate,
-            args.legend = list(bty = "n", x = "topleft"))
-  })
-})
+}
+
+
+
+
+
+
+
+
+
+
+

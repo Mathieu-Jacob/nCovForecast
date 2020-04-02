@@ -37,25 +37,19 @@ shinyUI(fluidPage(
                sidebarPanel(
                  titlePanel("Location"),
                  selectInput(inputId = "countryFinder",
-                             label = "Select Canada/Province:",
+                             label = "Select Region:",
                              choices = ddReg, 
                              selected = ddNames[1]),
-                 h5("Population:"),
-                 tableOutput(outputId = "population"),
-                 h5("Raw case numbers:"),
-                 tableOutput(outputId = "rawStats"),
-                 h5("Active cases:"),
-                 tableOutput(outputId = "tablePredConf"),
-                 h5("Doubling time (days):"),
-                 textOutput(outputId = "doubTime"),
-                 titlePanel("Detection"),
-                 h5("Estimated proportion of cases detected:"),
-                 textOutput(outputId = "detRate"),
-                 h5("Possible true number of cases now given imperfect detection:"),
-                 textOutput(outputId = "tablePredTrue"),
-                 hr(),
-                 p("Take this last number with a grain of salt; it is rough.  But low detection indicates that there are many more deaths in the country than there should be given reported case numbers (so there must be more cases than are reported)."),
+                 
+                 titlePanel("Key Metrics:"),
+                 tableOutput(outputId = "KeyMetrics"),
                  p("Active cases are total number of infections minus deaths and recoveries."),
+                 
+                 titlePanel("Detection"),
+                 tableOutput(outputId = "detRate"),
+                 p("Take this last number with a grain of salt; it is rough.  But low detection indicates that there are many more deaths in the country than there should be given reported case numbers (so there must be more cases than are reported)."),
+
+
                  titlePanel("Download Data"),
                  downloadButton("downloadData", "Download")
                ),
