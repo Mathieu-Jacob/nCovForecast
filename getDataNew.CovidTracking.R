@@ -24,8 +24,8 @@ getDataNew.CovidTracking <- function(){
   tsI <- data %>% select(dateChecked, Country.Region, Province.State, positive) %>% spread(key=dateChecked, value=positive, fill =0)
   tsD <- data %>% select(dateChecked, Country.Region, Province.State, death) %>% spread(key=dateChecked, value=death, fill =0)
   tsH <- data %>% select(dateChecked, Country.Region, Province.State, hospitalized) %>% spread(key=dateChecked, value=hospitalized, fill =0)
-  tsT <- data %>% select(dateChecked, Country.Region, Province.State, total) %>% spread(key=dateChecked, value=total, fill =0)
-  
+  tsT <- data %>% select(dateChecked, Country.Region, Province.State, totalTestResults) %>% spread(key=dateChecked, value=totalTestResults, fill =0)
+  tsP <- data %>% select(dateChecked, Country.Region, Province.State, pending) %>% spread(key=dateChecked, value=pending, fill =0)
   
   ########################################
   # 2 - Tidy Up Data
@@ -39,12 +39,13 @@ getDataNew.CovidTracking <- function(){
   names(tsD)[!dCols] <- make.names(names(tsD)[!dCols])
   names(tsT)[!dCols] <- make.names(names(tsT)[!dCols])
   names(tsH)[!dCols] <- make.names(names(tsH)[!dCols])
-  
+  names(tsP)[!dCols] <- make.names(names(tsP)[!dCols])
   
   names(tsI)[dCols] <- as.character(dates)
   names(tsD)[dCols] <- as.character(dates)
   names(tsT)[dCols] <- as.character(dates)
   names(tsH)[dCols] <- as.character(dates)
+  names(tsP)[dCols] <- as.character(dates)
   ########################################
   # 3 - Augment Data, Filter Country, Aggregate by Country
   ########################################
@@ -72,13 +73,19 @@ getDataNew.CovidTracking <- function(){
   tsA <- tsA %>% filter(Country.Region %in% Country) %>% SelectRegion(., Region.Keep)
   tsR <- tsR %>% filter(Country.Region %in% Country) %>% SelectRegion(., Region.Keep)
   tsD <- tsD %>% filter(Country.Region %in% Country) %>% SelectRegion(., Region.Keep)
+  tsH <- tsH %>% filter(Country.Region %in% Country) %>% SelectRegion(., Region.Keep)
+  tsT <- tsT %>% filter(Country.Region %in% Country) %>% SelectRegion(., Region.Keep)
+  tsP <- tsP %>% filter(Country.Region %in% Country) %>% SelectRegion(., Region.Keep)
   
   tsI$data.type <- "tsI"
   tsA$data.type <- "tsA"
   tsR$data.type <- "tsR"
   tsD$data.type <- "tsD"
+  tsH$data.type <- "tsH"
+  tsT$data.type <- "tsT"
+  tsP$data.type <- "tsP"
   
-  return(rbind(tsI, tsA, tsR, tsD))
+  return(rbind(tsI, tsA, tsR, tsD, tsH, tsT, tsP))
 }
 
 

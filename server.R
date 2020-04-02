@@ -30,12 +30,19 @@ shinyServer <- function(input, output) {
     yD <- tsSub(data, "tsD", input$countryFinder)
     yI <- tsSub(data, "tsI", input$countryFinder)
     yR <- tsSub(data, "tsR", input$countryFinder)
+    yH <- tsSub(data, "tsH", input$countryFinder)
+    yT <- tsSub(data, "tsT", input$countryFinder)
+    yP <- tsSub(data, "tsP", input$countryFinder)
+    
     projection.period <- 70
     data <- data.frame(dates = c(dates,max(dates)+1:projection.period),
                        yA = c(yA,rep(NA,projection.period)),
                        yD = c(yD,rep(NA,projection.period)),
                        yI = c(yI,rep(NA,projection.period)),
-                       yR = c(yR,rep(NA,projection.period)))
+                       yR = c(yR,rep(NA,projection.period)),
+                       yH = c(yH,rep(NA,projection.period)),
+                       yT = c(yT,rep(NA,projection.period)),
+                       yP = c(yP,rep(NA,projection.period)))
     row.names(data) <- c()
     data <- add.exponential(data, inWindow=10, proj=70)
     data <- add.SIR(data, N=pop, R0=1.3)
@@ -57,6 +64,9 @@ shinyServer <- function(input, output) {
     p <- plot_ly(data=data) %>% 
       add_markers(name = 'Actual - Active', x = ~dates, y = ~yA) %>%
       add_markers(name = 'Actual - Deaths', x = ~dates, y = ~yD) %>%
+      # add_markers(name = 'Actual - Hospitalized', x = ~dates, y = ~yH) %>%
+      # add_markers(name = 'Actual - Tests Total', x = ~dates, y = ~yT) %>%
+      # add_markers(name = 'Actual - Tests Pending', x = ~dates, y = ~yP) %>%
       add_lines(name = 'Exponential - Active', x = ~dates, y = ~yA.exp) %>% 
       add_lines(name = 'SIR R0=1.3 - Active', x = ~dates, y = ~yA.SIR.R1.3) %>% 
       add_lines(name = 'SIR R0=1.5 - Active', x = ~dates, y = ~yA.SIR.R1.5) %>% 
@@ -118,6 +128,20 @@ shinyServer <- function(input, output) {
     Latest.D <- data$yD %>% .[!is.na(.)] %>% .[length(.)]
     Latest.I <- data$yI %>% .[!is.na(.)] %>% .[length(.)]
     Latest.R <- data$yR %>% .[!is.na(.)] %>% .[length(.)]
+    Latest.T <- data$yT %>% .[!is.na(.)] %>% .[length(.)]
+    Latest.P <- data$yP %>% .[!is.na(.)] %>% .[length(.)]
+    Latest.H <- data$yH %>% .[!is.na(.)] %>% .[length(.)]
+    if (input$countryFinder == "United States" | nchar(input$countryFinder) == 2){
+      Latest.T <- format(Latest.T, big.mark=",")
+      Latest.P <- format(Latest.P, big.mark=",")
+      Latest.H <- format(Latest.H, big.mark=",")
+      Latest.R <- format(Latest.R, big.mark=",")
+    }else{
+      Latest.R <- NA
+      Latest.T <- NA
+      Latest.P <- NA
+      Latest.H <- NA
+    }
     
     pDat <- data[!is.na(data$yA),c("dates","yA")]
     dTime <- round(doubTime(pDat$yA, pDat$dates), 1)
@@ -126,11 +150,14 @@ shinyServer <- function(input, output) {
              format(Latest.I, big.mark=","),
              format(Latest.A, big.mark=","),
              format(Latest.D, big.mark=","),
-             format(Latest.R, big.mark=","),
+             Latest.R,
+             Latest.H,
+             Latest.T,
+             Latest.P,
              slope,
              dTime)
     dim(out) <-c(length(out), 1)
-    rownames(out) <- c("Population", "Infected", "Active", "Deaths", "Recovered", "Exponential Growth Slope", "Doubling Time")
+    rownames(out) <- c("Population", "Infected", "Active", "Deaths", "Recovered", "Hospitalized", "Testings", "Pending Tests", "Exponential Growth Slope", "Doubling Time")
     out
   }, rownames = TRUE, colnames = FALSE)
   

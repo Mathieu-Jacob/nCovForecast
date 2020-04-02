@@ -41,7 +41,11 @@ Region <- c(#"Canada",
   "Connecticut",
   "South Carolina",
   "Massachusetts",
-  "Florida")
+  "Florida",
+  "Maine",
+  "ME",
+  "California",
+  "CA")
 
 Region.Keep<- c("Canada",
                 "Ontario",
@@ -70,7 +74,11 @@ Region.Keep<- c("Canada",
                 "Massachusetts",
                 "MA",
                 "Florida",
-                "FL")
+                "FL",
+                "Maine",
+                "ME",
+                "California",
+                "CA")
 
 
 ########################################
@@ -127,7 +135,11 @@ population <- c(14446515,
                 6976597,
                 6976597,
                 21992985,
-                21992985)
+                21992985,
+                1345790,
+                1345790,
+                39937489,
+                39937489)
 Prov<- c("Ontario",
          "Quebec",
          "British Columbia",
@@ -155,7 +167,11 @@ Prov<- c("Ontario",
          "Massachusetts",
          "MA",
          "Florida",
-         "FL")
+         "FL",
+         "Maine",
+         "ME",
+         "California",
+         "CA")
 population <- data.frame(Country=Prov,
                          population = population)
 
@@ -165,5 +181,6 @@ input <- list()
 input$countryFinder <- "United States"
 input$countryFinder <- "Canada"
 input$countryFinder <- "United States"
+input$countryFinder <- "CA"
 input$countryGrowthRate <- c("Canada", "United States")
 input$countryFinderCFI <- c("Canada", "United States")
