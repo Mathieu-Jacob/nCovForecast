@@ -25,6 +25,11 @@ shinyServer <- function(input, output) {
   
   ##### Data #####  
   GetModels <- reactive({
+    input.asofmodel <- input$asofmodel
+    input.countryFinder <- input$countryFinder
+    
+    print("debug")
+    print(input.asofmodel)
     pop <- population[population$Country %in% input$countryFinder,"population"]
     yA <- tsSub(data, "tsA", input$countryFinder)
     yD <- tsSub(data, "tsD", input$countryFinder)
@@ -44,13 +49,19 @@ shinyServer <- function(input, output) {
                        yT = c(yT,rep(NA,projection.period)),
                        yP = c(yP,rep(NA,projection.period)))
     row.names(data) <- c()
-    data <- add.exponential(data, inWindow=10, proj=70)
-    data <- add.SIR(data, N=pop, R0=1.3)
-    data <- add.SIR(data, N=pop, R0=1.5)
-    data <- add.SIR(data, N=pop, R0=1.7)
-    data <- add.SIR(data, N=pop, R0=1.9)
-    data <- add.SIR(data, N=pop, R0=2.1)
-    data <- add.SIR(data, N=pop, R0=2.3)
+    
+    print(input$asofmodel)
+
+    data <- add.exponential(data, inWindow=10, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.SIR(data, N=pop, R0=1.05, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.SIR(data, N=pop, R0=1.1, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.SIR(data, N=pop, R0=1.2, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.SIR(data, N=pop, R0=1.3, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.SIR(data, N=pop, R0=1.5, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.SIR(data, N=pop, R0=1.7, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.SIR(data, N=pop, R0=1.9, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.SIR(data, N=pop, R0=2.1, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.SIR(data, N=pop, R0=2.3, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
     data
   })
   
@@ -67,7 +78,10 @@ shinyServer <- function(input, output) {
       # add_markers(name = 'Actual - Hospitalized', x = ~dates, y = ~yH) %>%
       # add_markers(name = 'Actual - Tests Total', x = ~dates, y = ~yT) %>%
       # add_markers(name = 'Actual - Tests Pending', x = ~dates, y = ~yP) %>%
-      add_lines(name = 'Exponential - Active', x = ~dates, y = ~yA.exp) %>% 
+      add_lines(name = 'Exponential - Active', x = ~dates, y = ~yA.exp) %>%
+      add_lines(name = 'SIR R0=1.05 - Active', x = ~dates, y = ~yA.SIR.R1.05) %>% 
+      add_lines(name = 'SIR R0=1.1 - Active', x = ~dates, y = ~yA.SIR.R1.1) %>% 
+      add_lines(name = 'SIR R0=1.2 - Active', x = ~dates, y = ~yA.SIR.R1.2) %>% 
       add_lines(name = 'SIR R0=1.3 - Active', x = ~dates, y = ~yA.SIR.R1.3) %>% 
       add_lines(name = 'SIR R0=1.5 - Active', x = ~dates, y = ~yA.SIR.R1.5) %>% 
       add_lines(name = 'SIR R0=1.7 - Active', x = ~dates, y = ~yA.SIR.R1.7) %>% 
@@ -92,6 +106,9 @@ shinyServer <- function(input, output) {
       add_markers(name = 'Actual - Active', x = ~dates, y = ~yA) %>%
       add_markers(name = 'Actual - Deaths', x = ~dates, y = ~yD) %>%
       add_lines(name = 'Exponential - Active', x = ~dates, y = ~yA.exp) %>% 
+      add_lines(name = 'SIR R0=1.05 - Active', x = ~dates, y = ~yA.SIR.R1.05) %>% 
+      add_lines(name = 'SIR R0=1.1 - Active', x = ~dates, y = ~yA.SIR.R1.1) %>% 
+      add_lines(name = 'SIR R0=1.2 - Active', x = ~dates, y = ~yA.SIR.R1.2) %>% 
       add_lines(name = 'SIR R0=1.3 - Active', x = ~dates, y = ~yA.SIR.R1.3) %>% 
       add_lines(name = 'SIR R0=1.5 - Active', x = ~dates, y = ~yA.SIR.R1.5) %>% 
       add_lines(name = 'SIR R0=1.7 - Active', x = ~dates, y = ~yA.SIR.R1.7) %>% 
@@ -122,7 +139,7 @@ shinyServer <- function(input, output) {
   output$KeyMetrics <- renderTable({
     data <- GetModels()
     pop <- population[population$Country %in% input$countryFinder,"population"]
-    slope <- round(exponential.slope(data, inWindow=10),4)
+    slope <- round(exponential.slope(data, inWindow=10, input.asofmodel=input$asofmodel, input.countryFinder = input$countryFinder),4)
     
     Latest.A <- data$yA %>% .[!is.na(.)] %>% .[length(.)]
     Latest.D <- data$yD %>% .[!is.na(.)] %>% .[length(.)]

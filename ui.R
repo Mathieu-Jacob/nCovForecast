@@ -40,6 +40,11 @@ shinyUI(fluidPage(
                              label = "Select Region:",
                              choices = ddReg, 
                              selected = ddNames[1]),
+                 dateInput(inputId = "asofmodel",
+                           label = "Model As Of:",
+                           value = max(dates),
+                           min = "2020-03-05",
+                           max = max(dates)),
                  
                  titlePanel("Key Metrics:"),
                  tableOutput(outputId = "KeyMetrics"),

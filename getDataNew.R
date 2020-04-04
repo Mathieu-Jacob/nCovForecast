@@ -177,10 +177,11 @@ population <- data.frame(Country=Prov,
 
 
 #Selection for testing offline
-input <- list()
-input$countryFinder <- "United States"
-input$countryFinder <- "Canada"
-input$countryFinder <- "United States"
-input$countryFinder <- "CA"
-input$countryGrowthRate <- c("Canada", "United States")
-input$countryFinderCFI <- c("Canada", "United States")
+# input <- list()
+# input$countryFinder <- "United States"
+# input$countryFinder <- "Canada"
+# input$countryFinder <- "United States"
+# input$asofmodel = "2020-04-01"
+# input$asofmodel = "2020-03-25"
+# input$countryGrowthRate <- c("Canada", "United States")
+# input$countryFinderCFI <- c("Canada", "United States")

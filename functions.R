@@ -37,7 +37,7 @@ fill.missing <- function(data.missing, missing, fill){
 }
 
 ########################################
-# Server Functions
+# Server Functions - General
 ########################################
 # To subset time series data and aggregate totals
 tsSub <- function(data, ts.type, Country.set, sumcols=TRUE){
@@ -108,64 +108,83 @@ plot.actual <- function(data){
 }
 
 
+########################################
+# Server Functions - Models
+########################################
+
+
+
 # Simple projection based on growth over last inWindow days
 # returns extended plotting data
-add.exponential <- function(data, inWindow=10, proj=10){
-  max.actual <- max(which(!is.na(data$yA)))
-  id.fit <- (max.actual - inWindow + 1):max.actual
+add.exponential <- function(data, inWindow=10, proj=10, input.asofmodel="2020-04-03", input.countryFinder = "Canada"){
+  max.yA <- max(which(!is.na(data$yA)))
+  max.fit <- min(max.yA,which(data$dates == input.asofmodel))
+  print(dates[max.fit])
+  
+  id.fit <- (max.fit - inWindow + 1):max.fit
   dates.fit <- data$dates[id.fit]
+  
+  id.predict <- min(id.fit):(max.yA+proj)
+  dates.predict <- data$dates[id.predict]
+  
   lnActive <- log(data$yA[id.fit])
   lnActive[is.infinite(lnActive)] <- NA
   model.exp <- lm(lnActive~dates.fit)
   
-  dates.predict <- c(dates.fit, max(dates.fit)+1:proj)
   yA.exp <- exp(predict(model.exp, newdata = list(dates.fit = dates.predict)))
   yA.exp <- data.frame(dates = dates.predict,
                        yA.exp = round(yA.exp))
   data <- left_join(data, yA.exp)
   data
 }
-exponential.slope <- function(data, inWindow=10){
-  max.actual <- max(which(!is.na(data$yA)))
-  id.fit <- (max.actual - inWindow + 1):max.actual
+exponential.slope <- function(data, inWindow=10, input.asofmodel="2020-04-03", input.countryFinder = "Canada"){
+  max.yA <- max(which(!is.na(data$yA)))
+  max.fit <- min(max.yA,which(data$dates == input.asofmodel))
+  
+  id.fit <- (max.fit - inWindow + 1):max.fit
   dates.fit <- data$dates[id.fit]
+
+  # id.predict <- min(id.fit):(max.yA+proj)
+  # dates.predict <- data$dates[id.predict]
+  
   lnActive <- log(data$yA[id.fit])
   lnActive[is.infinite(lnActive)] <- NA
   model.exp <- lm(lnActive~dates.fit)
   coefficients(model.exp)[2]
 }
 
-add.SIR <- function(data, N=pop, R0=R, inWindow=10){
-  Region.fit = input$countryFinder
-  end.time <- max(which(!is.na(data$yA)))
-  start.time <- data$dates[min(which(data$yA>=50))]
-  start.time <- which(data$dates == start.time)
-  if(Region.fit %in% c("US", "United States")){
-    start.time <- max(start.time, which(data$dates == "2020-03-18"))
-  }
-  if(Region.fit %in% c("FL", "Florida")){
-    start.time <- max(start.time, which(data$dates == "2020-03-15"))
-  }
-  if(Region.fit %in% c("MA", "Massachusetts")){
-    start.time <- max(start.time, which(data$dates == "2020-03-16"))
-  }
-  if(Region.fit %in% c("NJ", "New Jersey")){
-    start.time <- max(start.time, which(data$dates == "2020-03-18"))
-  }
-  if(Region.fit %in% c("NY", "New York")){
-    start.time <- max(start.time, which(data$dates == "2020-03-20"))
-  }
-  if(Region.fit %in% c("US", "United States")){
-    start.time <- max(start.time, which(data$dates == "2020-03-04"))
-  }
-  if(Region.fit == "Ontario"){
-    start.time <- max(start.time, which(data$dates == "2020-03-17"))
-  }
-  if(Region.fit %in% c("MA", "Massachusetts")){
-    start.time <- max(start.time, which(data$dates == "2020-03-18"))
-  }
-
-  id.fit <- start.time:end.time
+add.SIR <- function(data, N=pop, R0=R, inWindow=10, proj=10, input.asofmodel="2020-04-03", input.countryFinder = "Canada"){
+  Region.fit <- input.countryFinder
+  
+  max.yA <- max(which(!is.na(data$yA)))
+  max.fit <- min(max.yA,which(data$dates == input.asofmodel))
+  
+  min.time <- min(which(data$yA>=50))
+  start.time <- max(min.time, max.fit-inWindow+1)
+  
+  # if(Region.fit %in% c("US", "United States")){
+  #   start.time <- max(start.time, which(data$dates == "2020-03-18"))
+  # }else if(Region.fit %in% c("FL", "Florida")){
+  #   start.time <- max(start.time, which(data$dates == "2020-03-15"))
+  # }else if(Region.fit %in% c("MA", "Massachusetts")){
+  #   start.time <- max(start.time, which(data$dates == "2020-03-16"))
+  # }else if(Region.fit %in% c("NJ", "New Jersey")){
+  #   start.time <- max(start.time, which(data$dates == "2020-03-18"))
+  # }else if(Region.fit %in% c("NY", "New York")){
+  #   start.time <- max(start.time, which(data$dates == "2020-03-20"))
+  # }else if(Region.fit %in% c("US", "United States")){
+  #   start.time <- max(start.time, which(data$dates == "2020-03-04"))
+  # }else if(Region.fit == "Ontario"){
+  #   start.time <- max(start.time, which(data$dates == "2020-03-17"))
+  # }else if(Region.fit %in% c("MA", "Massachusetts")){
+  #   start.time <- max(start.time, which(data$dates == "2020-03-18"))
+  # }
+  
+  id.fit <- start.time:max.fit
+  dates.fit <- data$dates[id.fit]
+  
+  id.predict <- min(id.fit):(max.yA+proj)
+  dates.predict <- data$dates[id.predict]
   
   SIR <- function(time, state, parameters) {
     # https://stats.stackexchange.com/questions/446712/fitting-sir-model-with-2019-ncov-data-doesnt-conververge
@@ -189,20 +208,14 @@ add.SIR <- function(data, N=pop, R0=R, inWindow=10){
     })
   }
   
-  
   nbpoints = ifelse(length(id.fit)<inWindow,length(id.fit),inWindow)
-  id.predict <- start.time:nrow(data)
-  const <- exponential.slope(data, inWindow=nbpoints)
-
-
-  
-  dates.predict <- data$dates[start.time:nrow(data)]
+  const <- exponential.slope(data, inWindow=nbpoints, input.asofmodel=input.asofmodel, input.countryFinder = input.countryFinder)
   
   init <- c(S = N - data$yI[start.time] - data$yR[start.time] - data$yD[start.time], I = data$yA[start.time], R = data$yR[start.time])
-  
   fit <- round(ode(y = init, times = id.predict, func = SIR, parms = c(const, R0)))[,-1]
   colnames(fit) <- paste0(c("yS.SIR.R", "yA.SIR.R", "yR.SIR.R"),R0)
   fit <- cbind(data.frame(dates=dates.predict), fit)
+  
   data <- left_join(data, fit)
   data
 }
@@ -310,3 +323,104 @@ projSimpleSlope<-function(rawN, rawTime, inWindow=10){
   mFit <- lm(lnN~tIn)
   coefficients(mFit)
 }
+
+
+# data <- data.frame(yA = c(40, 45, 43, 31, 20),
+#                    Prov = c("A", "A", "B", "B", "B"))
+# 
+# data <- add.lag(data, target="yA", group="Prov", n=1)
+# data <- add.lag(data, target="yA", group="Prov", n=2)
+# 
+# data <- add.ewma(data, target="yA", group="Prov", alpha=0.3)
+
+
+
+
+
+add.ewma <- function(data, target, group, alpha) {
+  data[,paste0(target,"_EWMA",alpha)] <- NA
+  
+  for(g in unique(data[,group])){
+    EWMA <- NULL
+    x <- data[data[,group] == g & !is.na(data[,target]),target]
+    EWMA[1] <- x[1]
+    for(i in 2:length(x)){
+      EWMA[i] <-   alpha * x[i] + (1-alpha) * EWMA[i-1]
+    }
+    data[data[,group] == g & !is.na(data[,target]),paste0(target,"_EWMA",alpha)] <- EWMA
+  }
+  data
+  
+}
+add.lag <- function(data, target, group, n=1){
+  data[,paste0(target,"_L",n)] <- NA
+  
+  for(g in unique(data[,group])){
+    data[data[,group] == g,paste0(target,"_L",n)] <- c(rep(NA,n),data[data[,group] == g,target])[1:length(data[data[,group] == g,target])]
+  }
+  data
+}
+
+add.GLM <- function(data, inWindow=10, proj=10){
+  max.actual <- max(which(!is.na(data$yA)))
+  min.actual <- min(which(data$yA > 80))
+  
+  id.fit <- min.actual:max.actual
+  dates.fit <- data$dates[id.fit]
+  
+  add.features <- function(){
+    data$group <- input$countryFinder
+    data <- add.lag(data, target="yA", group="group", n=1)
+    data <- add.lag(data, target="yA", group="group", n=2)
+    data <- add.lag(data, target="yA", group="group", n=3)
+    data <- add.lag(data, target="yA", group="group", n=4)
+    data <- add.lag(data, target="yA", group="group", n=5)
+    data <- add.lag(data, target="yA", group="group", n=6)
+    data <- add.lag(data, target="yA", group="group", n=7)
+    data <- add.lag(data, target="yA", group="group", n=8)
+    data <- add.lag(data, target="yA", group="group", n=9)
+    data <- add.lag(data, target="yA", group="group", n=10)
+    # data$ya_meanL1_5 <- mean(data$yA_L1,data$yA_L2,data$yA_L3,data$yA_L4,data$yA_L5)
+    # data$ya_meanL6_10 <- mean(data$yA_L6,data$yA_L7,data$yA_L8,data$yA_L9,data$yA_L10)
+    # data$ya_meanL1_10 <- mean(data$yA_L1,data$yA_L2,data$yA_L3,data$yA_L4,data$yA_L5,data$yA_L6,data$yA_L7,data$yA_L8,data$yA_L9,data$yA_L10)
+    # 
+    for(alpha in (1:9)/10){
+      data <- add.ewma(data, target="yA", group="group", alpha=alpha)
+      for(L in 1:10){
+        print(alpha)
+        print(L)
+        data <- add.ewma(data, target=paste0("yA_L",L), group="group", alpha=alpha)
+      }
+    }
+    data
+  }
+  data <- add.features()
+  
+  data$lnyA <- log(data$yA)
+  data$lnyA[is.infinite(data$lnyA)] <- NA
+  
+  features <- c("dates", names(data)[grepl("yA_",names(data))])
+  formula <- as.formula(paste("lnyA", paste(features, collapse=" + "), sep=" ~ "))
+  
+  model.lm <- lm(lnyA ~ dates + yA_L1 + yA_L2, data=data[id.fit,])
+  
+  id.predict <- c(id.fit,max(id.fit)+1:proj)
+  yA.bak <- data$yA
+  for(t in id.predict){
+    print(t)
+    yA.lm <- exp(predict(model.lm, newdata = data[t,]))
+    data$yA[t] <- yA.lm
+    data <- add.features()
+  }
+  data$yA.lm <- data$yA
+  data$yA <- yA.bak
+  
+  dates.predict <- c(dates.fit, max(dates.fit)+1:proj)
+  yA.lm <- exp(predict(model.lm, newdata = data[c(id.fit,max(id.fit)+1:proj),]))
+  yA.lm <- data.frame(dates = dates.predict,
+                      yA.lm = round(yA.lm))
+  data <- left_join(data, yA.lm)
+  data
+}
+
+

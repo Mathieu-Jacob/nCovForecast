@@ -21,18 +21,18 @@ getDataNew.CovidTracking <- function(){
   data <- read_csv(file)
   data$Country.Region <- "United States"
   data$Province.State <- data$state
-  tsI <- data %>% select(dateChecked, Country.Region, Province.State, positive) %>% spread(key=dateChecked, value=positive, fill =0)
-  tsD <- data %>% select(dateChecked, Country.Region, Province.State, death) %>% spread(key=dateChecked, value=death, fill =0)
-  tsH <- data %>% select(dateChecked, Country.Region, Province.State, hospitalized) %>% spread(key=dateChecked, value=hospitalized, fill =0)
-  tsT <- data %>% select(dateChecked, Country.Region, Province.State, totalTestResults) %>% spread(key=dateChecked, value=totalTestResults, fill =0)
-  tsP <- data %>% select(dateChecked, Country.Region, Province.State, pending) %>% spread(key=dateChecked, value=pending, fill =0)
+  tsI <- data %>% select(date, Country.Region, Province.State, positive) %>% distinct() %>% spread(key=date, value=positive, fill =0)
+  tsD <- data %>% select(date, Country.Region, Province.State, death) %>% distinct() %>% spread(key=date, value=death, fill =0)
+  tsH <- data %>% select(date, Country.Region, Province.State, hospitalized) %>% distinct() %>% spread(key=date, value=hospitalized, fill =0)
+  tsT <- data %>% select(date, Country.Region, Province.State, totalTestResults) %>% distinct() %>% spread(key=date, value=totalTestResults, fill =0)
+  tsP <- data %>% select(date, Country.Region, Province.State, pending) %>% distinct() %>% spread(key=date, value=pending, fill =0)
   
   ########################################
   # 2 - Tidy Up Data
   ########################################
   ## get Date range
   dCols<-dateCols(tsI)
-  dates<-as.Date(colnames(tsI)[dCols], format = "%Y-%m-%d")
+  dates<-as.Date(colnames(tsI)[dCols], format = "%Y%m%d")
   
   ## Tidy up names
   names(tsI)[!dCols] <- make.names(names(tsI)[!dCols])
