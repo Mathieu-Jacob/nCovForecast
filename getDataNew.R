@@ -16,6 +16,7 @@ library("tidyverse")
 source("functions.R")
 source("getDataNew.JHU.R")
 source("getDataNew.CovidTracking.R")
+source("getDataNew.IHME.R")
 
 ########################################
 # 0 - Parameters
@@ -94,8 +95,30 @@ data.US <- fill.missing(data.US, missing.in.US, fill=NA)
 data.CA <- fill.missing(data.CA, missing.in.CA, fill=NA)
 
 data <- rbind(data.US, data.CA)
+data.IHME <- getDataNew.IHME()
 
- 
+# 
+# data.US <- getDataNew.CovidTracking()
+# data.CA <- getDataNew.JHU()
+# data.IHME <- getDataNew.IHME()
+# 
+# 
+# missing.in.CA <- unique(names(data.US)[! names(data.US) %in% names(data.CA)])
+# missing.in.US <- unique(names(data.CA)[! names(data.CA) %in% names(data.US)])
+# 
+# data.US <- fill.missing(data.US, missing.in.US, fill=NA)
+# data.CA <- fill.missing(data.CA, missing.in.CA, fill=NA)
+# 
+# data.CAUS <- rbind(data.US, data.CA)
+# 
+# 
+# missing.in.IHME <- unique(names(data.CAUS)[! names(data.CAUS) %in% names(data.IHME)])
+# missing.in.CAUS <- unique(names(data.IHME)[! names(data.IHME) %in% names(data.CAUS)])
+# 
+# data.CAUS <- fill.missing(data.CAUS, missing.in.CAUS, fill=NA)
+# data.IHME <- fill.missing(data.IHME, missing.in.IHME, fill=NA)
+# 
+# data <- rbind(data.CAUS, data.IHME)
 ########################################
 ## UI Parameters
 ########################################
@@ -177,11 +200,11 @@ population <- data.frame(Country=Prov,
 
 
 #Selection for testing offline
-# input <- list()
-# input$countryFinder <- "United States"
-# input$countryFinder <- "Canada"
-# input$countryFinder <- "United States"
-# input$asofmodel = "2020-04-01"
-# input$asofmodel = "2020-03-25"
-# input$countryGrowthRate <- c("Canada", "United States")
-# input$countryFinderCFI <- c("Canada", "United States")
+input <- list()
+input$countryFinder <- "New York"
+input$countryFinder <- "Canada"
+input$countryFinder <- "United States"
+input$asofmodel = "2020-04-01"
+input$asofmodel = "2020-03-25"
+input$countryGrowthRate <- c("Canada", "United States")
+input$countryFinderCFI <- c("Canada", "United States")

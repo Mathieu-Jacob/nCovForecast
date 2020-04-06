@@ -61,10 +61,16 @@ getDataNew.CovidTracking <- function(){
   
   #Helper Function to aggregate & select
   SelectRegion<-function(x, keep){
-    Province <- cbind(Country = x$Province.State [!is.na(x$Province.State )],
-                      x[!is.na(x$Province.State ), dCols])
-    
     CountryTotal <- aggregate(x[, dCols], by = list(Country = x$Country.Region), FUN = sum)
+    
+    x <- x[x$Province.State %in% keep,]
+    Abbrev <- data.frame(Province.State = c("United States", "NY", "NJ", "PA", "CT", "SC", "MA", "FL", "ME", "CA"),
+                         Province.State.full = c("United States", "New York", "New Jersey", "Pennsylvania", "Connecticut", "South Carolina", "Massachusetts", "Florida", "Maine", "California"))
+    x <- left_join(x, Abbrev)
+    x <- x[!is.na(x$Province.State),]
+    
+    Province <- cbind(data.frame(Country = x$Province.State.full), x[, c(dCols, FALSE)])
+    
     out <- rbind(CountryTotal, Province)
     out[out$Country %in% keep,]
   }
@@ -84,7 +90,7 @@ getDataNew.CovidTracking <- function(){
   tsH$data.type <- "tsH"
   tsT$data.type <- "tsT"
   tsP$data.type <- "tsP"
-  
+
   return(rbind(tsI, tsA, tsR, tsD, tsH, tsT, tsP))
 }
 

@@ -28,8 +28,6 @@ shinyServer <- function(input, output) {
     input.asofmodel <- input$asofmodel
     input.countryFinder <- input$countryFinder
     
-    print("debug")
-    print(input.asofmodel)
     pop <- population[population$Country %in% input$countryFinder,"population"]
     yA <- tsSub(data, "tsA", input$countryFinder)
     yD <- tsSub(data, "tsD", input$countryFinder)
@@ -39,6 +37,22 @@ shinyServer <- function(input, output) {
     yT <- tsSub(data, "tsT", input$countryFinder)
     yP <- tsSub(data, "tsP", input$countryFinder)
     
+
+
+    yD.IHME <- tsSub(data.IHME, "tsD.IHME", input$countryFinder)
+    yI.IHME <- tsSub(data.IHME, "tsI.IHME", input$countryFinder)
+    
+    min.data <- names(yA)[1]
+    min.data.IHME <- names(yD.IHME)[1]
+    cols.to.add <- as.Date(min.data.IHME) - as.Date(min.data)
+    max.cols <- length(yA) + 70
+    yD.IHME <- c(rep(NA,cols.to.add), yD.IHME)[1:(min(length(yD.IHME),max.cols))]
+    yI.IHME <- c(rep(NA,cols.to.add), yI.IHME)[1:(min(length(yI.IHME),max.cols))]
+    
+    
+    
+    
+    
     projection.period <- 70
     data <- data.frame(dates = c(dates,max(dates)+1:projection.period),
                        yA = c(yA,rep(NA,projection.period)),
@@ -47,12 +61,16 @@ shinyServer <- function(input, output) {
                        yR = c(yR,rep(NA,projection.period)),
                        yH = c(yH,rep(NA,projection.period)),
                        yT = c(yT,rep(NA,projection.period)),
-                       yP = c(yP,rep(NA,projection.period)))
+                       yP = c(yP,rep(NA,projection.period)),
+                       yD.IHME = yD.IHME,
+                       yI.IHME = yI.IHME)
     row.names(data) <- c()
     
     print(input$asofmodel)
 
-    data <- add.exponential(data, inWindow=10, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.exponential(data, type="yA", inWindow=10, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.exponential(data, type="yI", inWindow=10, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    data <- add.exponential(data, type="yD", inWindow=10, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
     data <- add.SIR(data, N=pop, R0=1.05, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
     data <- add.SIR(data, N=pop, R0=1.1, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
     data <- add.SIR(data, N=pop, R0=1.2, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
@@ -62,6 +80,20 @@ shinyServer <- function(input, output) {
     data <- add.SIR(data, N=pop, R0=1.9, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
     data <- add.SIR(data, N=pop, R0=2.1, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
     data <- add.SIR(data, N=pop, R0=2.3, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    # data <- add.SIR.V2(data, N=pop, R0=1.05, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    # data <- add.SIR.V2(data, N=pop, R0=1.10, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    # data <- add.SIR.V2(data, N=pop, R0=1.15, proj=70, input.asofmodel = input.asofmodel, input.countryFinder = input.countryFinder)
+    
+    data$yI.SIR.R1.05 <- data$yA.SIR.R1.05 + data$yR.SIR.R1.05
+    data$yI.SIR.R1.1 <- data$yA.SIR.R1.1 + data$yR.SIR.R1.1
+    data$yI.SIR.R1.2 <- data$yA.SIR.R1.2 + data$yR.SIR.R1.2
+    data$yI.SIR.R1.3 <- data$yA.SIR.R1.3 + data$yR.SIR.R1.3
+    
+    # data$yI2.SIR.R1.05 <- data$yI2.SIR.R1.05 + data$yD2.SIR.R1.05
+    # data$yI2.SIR.R1.1 <- data$yI2.SIR.R1.1 + data$yD2.SIR.R1.1
+    # data$yI2.SIR.R1.15 <- data$yI2.SIR.R1.15 + data$yD2.SIR.R1.15
+
+    
     data
   })
   
@@ -88,6 +120,8 @@ shinyServer <- function(input, output) {
       add_lines(name = 'SIR R0=1.9 - Active', x = ~dates, y = ~yA.SIR.R1.9) %>% 
       add_lines(name = 'SIR R0=2.1 - Active', x = ~dates, y = ~yA.SIR.R2.1) %>% 
       add_lines(name = 'SIR R0=2.3 - Active', x = ~dates, y = ~yA.SIR.R2.3) %>% 
+      add_lines(name = 'IHME - Cumul Cases', x = ~dates, y = ~yI.IHME) %>% 
+      add_lines(name = 'IHME - Deaths', x = ~dates, y = ~yD.IHME) %>% 
       layout(title = paste0(input$countryFinder,': Projection Over Time'),
              xaxis = list(title = "Dates"),
              yaxis = list(title = "Number of People", range=c(0,maxy)) )
@@ -115,6 +149,8 @@ shinyServer <- function(input, output) {
       add_lines(name = 'SIR R0=1.9 - Active', x = ~dates, y = ~yA.SIR.R1.9) %>% 
       add_lines(name = 'SIR R0=2.1 - Active', x = ~dates, y = ~yA.SIR.R2.1) %>% 
       add_lines(name = 'SIR R0=2.3 - Active', x = ~dates, y = ~yA.SIR.R2.3) %>% 
+      add_lines(name = 'IHME - Cumul Cases', x = ~dates, y = ~yI.IHME) %>% 
+      add_lines(name = 'IHME - Deaths', x = ~dates, y = ~yD.IHME) %>% 
       layout(title = paste0(input$countryFinder,': Projection Over Time'),
              xaxis = list(title = "Dates"),
              yaxis = list(title = "Number of People", range=c(0,maxy)) )
@@ -125,6 +161,41 @@ shinyServer <- function(input, output) {
     logPlot <- p %>% layout(yaxis = list(type = "log", range=c(0,maxy)))
     logPlot
   })
+  
+
+  output$myPlot <- renderPlotly({
+    data <- GetModels()
+    
+    maxy <- max(data$yA.SIR.R2.3[!is.na(data$yA.SIR.R2.3)])
+    maxy <- 10^floor(log10(maxy)) * ceiling(maxy/10^floor(log10(maxy)))
+
+    p <- plot_ly(data=data) %>% 
+      add_markers(name = 'Actual - Cases', x = ~dates, y = ~yI) %>%
+      add_markers(name = 'Actual - Deaths', x = ~dates, y = ~yD) %>%
+      
+      add_lines(name = 'Exponential - Deaths', x = ~dates, y = ~yD.exp) %>% 
+      add_lines(name = 'IHME - Deaths', x = ~dates, y = ~yD.IHME) %>% 
+      # add_lines(name = 'SIR R0=1.05 - Deaths', x = ~dates, y = ~yR.SIR.R1.05) %>% 
+      # add_lines(name = 'SIR R0=1.1 - Deaths', x = ~dates, y = ~yR.SIR.R1.1) %>% 
+      # add_lines(name = 'SIR R0=1.2 - Deaths', x = ~dates, y = ~yR.SIR.R1.2) %>% 
+      
+      add_lines(name = 'Exponential - Cases', x = ~dates, y = ~yI.exp) %>% 
+      add_lines(name = 'IHME - Cases', x = ~dates, y = ~yI.IHME) %>% 
+      add_lines(name = 'SIR R0=1.05 - Cases', x = ~dates, y = ~yI.SIR.R1.05) %>% 
+      add_lines(name = 'SIR R0=1.1 - Cases', x = ~dates, y = ~yI.SIR.R1.1) %>% 
+      add_lines(name = 'SIR R0=1.2 - Cases', x = ~dates, y = ~yI.SIR.R1.2) %>% 
+
+      layout(title = paste0(input$countryFinder,': Cumulative Cases (Not removing deaths & recovered)'),
+             xaxis = list(title = "Dates"),
+             yaxis = list(title = "Number of People", range=c(0,maxy)) )
+    p
+    
+    maxy <- max(data$yA.SIR.R2.3[!is.na(data$yA.SIR.R2.3)])
+    maxy <- ceiling(log10(maxy))
+    logPlot <- p %>% layout(yaxis = list(type = "log", range=c(0,maxy)))
+    logPlot
+  })
+  
   
   ##### DownloadTable ##### 
   output$downloadData <- downloadHandler(

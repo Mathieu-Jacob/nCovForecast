@@ -116,7 +116,10 @@ plot.actual <- function(data){
 
 # Simple projection based on growth over last inWindow days
 # returns extended plotting data
-add.exponential <- function(data, inWindow=10, proj=10, input.asofmodel="2020-04-03", input.countryFinder = "Canada"){
+add.exponential <- function(data, type="yA", inWindow=10, proj=10, input.asofmodel="2020-04-03", input.countryFinder = "Canada"){
+  yA.bak <- data$yA
+  data$yA <- data[,type]
+  
   max.yA <- max(which(!is.na(data$yA)))
   max.fit <- min(max.yA,which(data$dates == input.asofmodel))
   print(dates[max.fit])
@@ -134,10 +137,15 @@ add.exponential <- function(data, inWindow=10, proj=10, input.asofmodel="2020-04
   yA.exp <- exp(predict(model.exp, newdata = list(dates.fit = dates.predict)))
   yA.exp <- data.frame(dates = dates.predict,
                        yA.exp = round(yA.exp))
+  names(yA.exp) <- c("dates", paste0(type, ".exp"))
   data <- left_join(data, yA.exp)
+  data$yA <- yA.bak
   data
 }
-exponential.slope <- function(data, inWindow=10, input.asofmodel="2020-04-03", input.countryFinder = "Canada"){
+exponential.slope <- function(data, type="yA", inWindow=10, input.asofmodel="2020-04-03", input.countryFinder = "Canada"){
+  yA.bak <- data$yA
+  data$yA <- data[,type]
+  
   max.yA <- max(which(!is.na(data$yA)))
   max.fit <- min(max.yA,which(data$dates == input.asofmodel))
   
@@ -161,25 +169,7 @@ add.SIR <- function(data, N=pop, R0=R, inWindow=10, proj=10, input.asofmodel="20
   
   min.time <- min(which(data$yA>=50))
   start.time <- max(min.time, max.fit-inWindow+1)
-  
-  # if(Region.fit %in% c("US", "United States")){
-  #   start.time <- max(start.time, which(data$dates == "2020-03-18"))
-  # }else if(Region.fit %in% c("FL", "Florida")){
-  #   start.time <- max(start.time, which(data$dates == "2020-03-15"))
-  # }else if(Region.fit %in% c("MA", "Massachusetts")){
-  #   start.time <- max(start.time, which(data$dates == "2020-03-16"))
-  # }else if(Region.fit %in% c("NJ", "New Jersey")){
-  #   start.time <- max(start.time, which(data$dates == "2020-03-18"))
-  # }else if(Region.fit %in% c("NY", "New York")){
-  #   start.time <- max(start.time, which(data$dates == "2020-03-20"))
-  # }else if(Region.fit %in% c("US", "United States")){
-  #   start.time <- max(start.time, which(data$dates == "2020-03-04"))
-  # }else if(Region.fit == "Ontario"){
-  #   start.time <- max(start.time, which(data$dates == "2020-03-17"))
-  # }else if(Region.fit %in% c("MA", "Massachusetts")){
-  #   start.time <- max(start.time, which(data$dates == "2020-03-18"))
-  # }
-  
+
   id.fit <- start.time:max.fit
   dates.fit <- data$dates[id.fit]
   
@@ -211,9 +201,58 @@ add.SIR <- function(data, N=pop, R0=R, inWindow=10, proj=10, input.asofmodel="20
   nbpoints = ifelse(length(id.fit)<inWindow,length(id.fit),inWindow)
   const <- exponential.slope(data, inWindow=nbpoints, input.asofmodel=input.asofmodel, input.countryFinder = input.countryFinder)
   
-  init <- c(S = N - data$yI[start.time] - data$yR[start.time] - data$yD[start.time], I = data$yA[start.time], R = data$yR[start.time])
+  init <- c(S = N - data$yI[start.time] - data$yR[start.time] - data$yD[start.time], I = data$yA[start.time], R = data$yR[start.time] + data$yD[start.time])
   fit <- round(ode(y = init, times = id.predict, func = SIR, parms = c(const, R0)))[,-1]
   colnames(fit) <- paste0(c("yS.SIR.R", "yA.SIR.R", "yR.SIR.R"),R0)
+  fit <- cbind(data.frame(dates=dates.predict), fit)
+  
+  data <- left_join(data, fit)
+  data
+}
+
+add.SIR.V2 <- function(data, N=pop, R0=R, inWindow=10, proj=10, input.asofmodel="2020-04-03", input.countryFinder = "Canada"){
+  Region.fit <- input.countryFinder
+  
+  max.yA <- max(which(!is.na(data$yA)))
+  max.fit <- min(max.yA,which(data$dates == input.asofmodel))
+  
+  min.time <- min(which(data$yA>=50))
+  start.time <- max(min.time, max.fit-inWindow+1)
+  
+  id.fit <- start.time:max.fit
+  dates.fit <- data$dates[id.fit]
+  
+  id.predict <- min(id.fit):(max.yA+proj)
+  dates.predict <- data$dates[id.predict]
+  
+  SIR <- function(time, state, parameters) {
+    # https://stats.stackexchange.com/questions/446712/fitting-sir-model-with-2019-ncov-data-doesnt-conververge
+    par <- as.list(c(state, parameters))
+    ####
+    #### use as change of variables variable
+    #### const = (beta-gamma)
+    #### delta = gamma/beta
+    #### R0 = beta/gamma > 1 
+    #### 
+    #### beta-gamma = beta*(1-delta)
+    #### beta-gamma = beta*(1-1/R0)
+    #### gamma = beta/R0
+    with(par, { 
+      beta  <- const/(1-1/R0)  
+      gamma <- const/(R0-1)  
+      dS <- -(beta * (S/N)      ) * I 
+      dI <-  (beta * (S/N)-gamma) * I 
+      dR <-  (             gamma) * I
+      list(c(dS, dI, dR))
+    })
+  }
+  
+  nbpoints = ifelse(length(id.fit)<inWindow,length(id.fit),inWindow)
+  const <- exponential.slope(data, type="yI", inWindow=nbpoints, input.asofmodel=input.asofmodel, input.countryFinder = input.countryFinder)
+  
+  init <- c(S = N - data$yI[start.time] - data$yD[start.time], I = data$yI[start.time] - data$yD[start.time], R = data$yD[start.time])
+  fit <- round(ode(y = init, times = id.predict, func = SIR, parms = c(const, R0)))[,-1]
+  colnames(fit) <- paste0(c("yS2.SIR.R", "yI2.SIR.R", "yD2.SIR.R"),R0)
   fit <- cbind(data.frame(dates=dates.predict), fit)
   
   data <- left_join(data, fit)
