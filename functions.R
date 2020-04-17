@@ -210,60 +210,6 @@ add.SIR <- function(data, N=pop, R0=R, inWindow=10, proj=10, input.asofmodel="20
   data
 }
 
-add.SIR.V2 <- function(data, N=pop, R0=R, inWindow=10, proj=10, input.asofmodel="2020-04-03", input.countryFinder = "Canada"){
-  Region.fit <- input.countryFinder
-  
-  max.yA <- max(which(!is.na(data$yA)))
-  max.fit <- min(max.yA,which(data$dates == input.asofmodel))
-  
-  min.time <- min(which(data$yA>=50))
-  start.time <- max(min.time, max.fit-inWindow+1)
-  
-  id.fit <- start.time:max.fit
-  dates.fit <- data$dates[id.fit]
-  
-  id.predict <- min(id.fit):(max.yA+proj)
-  dates.predict <- data$dates[id.predict]
-  
-  SIR <- function(time, state, parameters) {
-    # https://stats.stackexchange.com/questions/446712/fitting-sir-model-with-2019-ncov-data-doesnt-conververge
-    par <- as.list(c(state, parameters))
-    ####
-    #### use as change of variables variable
-    #### const = (beta-gamma)
-    #### delta = gamma/beta
-    #### R0 = beta/gamma > 1 
-    #### 
-    #### beta-gamma = beta*(1-delta)
-    #### beta-gamma = beta*(1-1/R0)
-    #### gamma = beta/R0
-    with(par, { 
-      beta  <- const/(1-1/R0)  
-      gamma <- const/(R0-1)  
-      dS <- -(beta * (S/N)      ) * I 
-      dI <-  (beta * (S/N)-gamma) * I 
-      dR <-  (             gamma) * I
-      list(c(dS, dI, dR))
-    })
-  }
-  
-  nbpoints = ifelse(length(id.fit)<inWindow,length(id.fit),inWindow)
-  const <- exponential.slope(data, type="yI", inWindow=nbpoints, input.asofmodel=input.asofmodel, input.countryFinder = input.countryFinder)
-  
-  init <- c(S = N - data$yI[start.time] - data$yD[start.time], I = data$yI[start.time] - data$yD[start.time], R = data$yD[start.time])
-  fit <- round(ode(y = init, times = id.predict, func = SIR, parms = c(const, R0)))[,-1]
-  colnames(fit) <- paste0(c("yS2.SIR.R", "yI2.SIR.R", "yD2.SIR.R"),R0)
-  fit <- cbind(data.frame(dates=dates.predict), fit)
-  
-  data <- left_join(data, fit)
-  data
-}
-
-
-
-
-
-
 
 #Fit SIR Model
 fit.SIR <- function(data, N=37590000, R0, proj=40, Region.fit){

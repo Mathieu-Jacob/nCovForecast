@@ -22,7 +22,7 @@ source("getDataNew.IHME.R")
 # 0 - Parameters
 ########################################
 reovery.time <- 22
-Country <- c("Canada", "US", "United States")
+Country <- c("Canada", "US", "United States", "Singapore")
 Region <- c(#"Canada",
   "Ontario",
   "Quebec",
@@ -79,7 +79,9 @@ Region.Keep<- c("Canada",
                 "Maine",
                 "ME",
                 "California",
-                "CA")
+                "CA",
+                
+                "Singapore")
 
 
 ########################################
@@ -162,7 +164,8 @@ population <- c(14446515,
                 1345790,
                 1345790,
                 39937489,
-                39937489)
+                39937489,
+                5639000)
 Prov<- c("Ontario",
          "Quebec",
          "British Columbia",
@@ -194,7 +197,8 @@ Prov<- c("Ontario",
          "Maine",
          "ME",
          "California",
-         "CA")
+         "CA",
+         "Singapore")
 population <- data.frame(Country=Prov,
                          population = population)
 
@@ -203,7 +207,7 @@ population <- data.frame(Country=Prov,
 input <- list()
 input$countryFinder <- "New York"
 input$countryFinder <- "Canada"
-input$countryFinder <- "United States"
+input$countryFinder <- "Quebec"
 input$asofmodel = "2020-04-01"
 input$asofmodel = "2020-03-25"
 input$countryGrowthRate <- c("Canada", "United States")
