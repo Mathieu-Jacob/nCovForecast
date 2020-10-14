@@ -39,26 +39,45 @@ shinyServer <- function(input, output) {
     
 
 
-    yD.IHME <- tsSub(data.IHME, "tsD.IHME", input$countryFinder)
-    yI.IHME <- tsSub(data.IHME, "tsI.IHME", input$countryFinder)
+    # yD.IHME <- tsSub(data.IHME, "tsD.IHME.ref", input$countryFinder)
+    # yI.IHME <- tsSub(data.IHME, "tsI.IHME.ref", input$countryFinder)
+    # 
+    # yD.IHME.best <- tsSub(data.IHME, "tsD.IHME.best", input$countryFinder)
+    # yI.IHME.best <- tsSub(data.IHME, "tsI.IHME.best", input$countryFinder)
+    # 
+    # yD.IHME.worst <- tsSub(data.IHME, "tsD.IHME.worst", input$countryFinder)
+    # yI.IHME.worst <- tsSub(data.IHME, "tsI.IHME.worst", input$countryFinder)
     
     min.data <- names(yA)[1]
-    min.data.IHME <- names(yD.IHME)[1]
-    if (min.data > min.data.IHME){
-      cols.to.remove <- as.Date(min.data) - as.Date(min.data.IHME)
-      yD.IHME <- yD.IHME[-(1:cols.to.remove)]
-      yI.IHME <- yI.IHME[-(1:cols.to.remove)]
-    }else{
-      cols.to.add <- as.Date(min.data.IHME) - as.Date(min.data)
-      yD.IHME <- c(rep(NA,cols.to.add), yD.IHME)
-      yI.IHME <- c(rep(NA,cols.to.add), yI.IHME)
-    }
+    # min.data.IHME <- names(yD.IHME)[1]
+    # if (min.data > min.data.IHME){
+    #   cols.to.remove <- as.Date(min.data) - as.Date(min.data.IHME)
+    #   yD.IHME <- yD.IHME[-(1:cols.to.remove)]
+    #   yI.IHME <- yI.IHME[-(1:cols.to.remove)]
+    #   yD.IHME.best <- yD.IHME.best[-(1:cols.to.remove)]
+    #   yI.IHME.best <- yI.IHME.best[-(1:cols.to.remove)]
+    #   yD.IHME.worst <- yD.IHME.worst[-(1:cols.to.remove)]
+    #   yI.IHME.worst <- yI.IHME.worst[-(1:cols.to.remove)]
+    # }else{
+    #   cols.to.add <- as.Date(min.data.IHME) - as.Date(min.data)
+    #   yD.IHME <- c(rep(NA,cols.to.add), yD.IHME)
+    #   yI.IHME <- c(rep(NA,cols.to.add), yI.IHME)
+    #   yD.IHME.best <- c(rep(NA,cols.to.add), yD.IHME.best)
+    #   yI.IHME.best <- c(rep(NA,cols.to.add), yI.IHME.best)
+    #   yD.IHME.worst <- c(rep(NA,cols.to.add), yD.IHME.worst)
+    #   yI.IHME.worst <- c(rep(NA,cols.to.add), yI.IHME.worst)
+    # }
 
     max.cols <- length(yA) + 70
-    yD.IHME <- yD.IHME[1:(min(length(yD.IHME),max.cols))]
-    yI.IHME <- yI.IHME[1:(min(length(yI.IHME),max.cols))]
-    
-    
+    # yD.IHME <- yD.IHME[1:(min(length(yD.IHME),max.cols))]
+    # yI.IHME <- yI.IHME[1:(min(length(yI.IHME),max.cols))]
+    # 
+    # yD.IHME.best <- yD.IHME.best[1:(min(length(yD.IHME.best),max.cols))]
+    # yI.IHME.best <- yI.IHME.best[1:(min(length(yI.IHME.best),max.cols))]
+    # 
+    # yD.IHME.worst <- yD.IHME.worst[1:(min(length(yD.IHME.worst),max.cols))]
+    # yI.IHME.worst <- yI.IHME.worst[1:(min(length(yI.IHME.worst),max.cols))]
+    # 
     
     
     
@@ -70,9 +89,14 @@ shinyServer <- function(input, output) {
                        yR = c(yR,rep(NA,projection.period)),
                        yH = c(yH,rep(NA,projection.period)),
                        yT = c(yT,rep(NA,projection.period)),
-                       yP = c(yP,rep(NA,projection.period)),
-                       yD.IHME = yD.IHME,
-                       yI.IHME = yI.IHME)
+                       yP = c(yP,rep(NA,projection.period))
+                       # , yD.IHME = yD.IHME,
+                       # yI.IHME = yI.IHME,
+                       # yD.IHME.best = yD.IHME.best,
+                       # yI.IHME.best = yI.IHME.best,
+                       # yD.IHME.worst = yD.IHME.worst,
+                       # yI.IHME.worst = yI.IHME.worst
+                       )
     row.names(data) <- c()
     
     print(input$asofmodel)
@@ -102,21 +126,25 @@ shinyServer <- function(input, output) {
     maxy <- 10^floor(log10(maxy)) * ceiling(maxy/10^floor(log10(maxy)))
     
     p <- plot_ly(data=data) %>% 
-      add_markers(name = 'Actual - Active', x = ~dates, y = ~yA) %>%
-      add_markers(name = 'Actual - Deaths', x = ~dates, y = ~yD) %>%
-      add_lines(name = 'Exponential - Active', x = ~dates, y = ~yA.exp) %>% 
-      add_lines(name = 'SIR R0=1.05 - Active', x = ~dates, y = ~yA.SIR.R1.05) %>% 
-      add_lines(name = 'SIR R0=1.1 - Active', x = ~dates, y = ~yA.SIR.R1.1) %>% 
-      add_lines(name = 'SIR R0=1.15 - Active', x = ~dates, y = ~yA.SIR.R1.15) %>% 
-      add_lines(name = 'SIR R0=1.2 - Active', x = ~dates, y = ~yA.SIR.R1.2) %>% 
-      add_lines(name = 'SIR R0=1.3 - Active', x = ~dates, y = ~yA.SIR.R1.3) %>% 
+      add_markers(name = 'Actual - Daily Active', x = ~dates, y = ~yA) %>%
+      add_markers(name = 'Actual - Cumul Deaths', x = ~dates, y = ~yD) %>%
+      add_lines(name = 'Exponential - Daily Active', x = ~dates, y = ~yA.exp) %>% 
+      add_lines(name = 'SIR R0=1.05 - Daily Active', x = ~dates, y = ~yA.SIR.R1.05) %>% 
+      add_lines(name = 'SIR R0=1.1 - Daily Active', x = ~dates, y = ~yA.SIR.R1.1) %>% 
+      add_lines(name = 'SIR R0=1.15 - Daily Active', x = ~dates, y = ~yA.SIR.R1.15) %>% 
+      add_lines(name = 'SIR R0=1.2 - Daily Active', x = ~dates, y = ~yA.SIR.R1.2) %>% 
+      add_lines(name = 'SIR R0=1.3 - Daily Active', x = ~dates, y = ~yA.SIR.R1.3) %>% 
       # add_lines(name = 'SIR R0=1.5 - Active', x = ~dates, y = ~yA.SIR.R1.5) %>% 
       # add_lines(name = 'SIR R0=1.7 - Active', x = ~dates, y = ~yA.SIR.R1.7) %>% 
       # add_lines(name = 'SIR R0=1.9 - Active', x = ~dates, y = ~yA.SIR.R1.9) %>% 
       # add_lines(name = 'SIR R0=2.1 - Active', x = ~dates, y = ~yA.SIR.R2.1) %>% 
       # add_lines(name = 'SIR R0=2.3 - Active', x = ~dates, y = ~yA.SIR.R2.3) %>% 
-      add_lines(name = 'IHME - Cumul Cases', x = ~dates, y = ~yI.IHME) %>% 
-      add_lines(name = 'IHME - Deaths', x = ~dates, y = ~yD.IHME) %>% 
+      # add_lines(name = 'IHME Ref - Cumul Cases', x = ~dates, y = ~yI.IHME) %>% 
+      # add_lines(name = 'IHME Ref - Deaths'     , x = ~dates, y = ~yD.IHME) %>% 
+      # add_lines(name = 'IHME Best - Cumul Cases', x = ~dates, y = ~yI.IHME.best) %>% 
+      # add_lines(name = 'IHME Best - Deaths'     , x = ~dates, y = ~yD.IHME.best) %>% 
+      # add_lines(name = 'IHME Worst - Cumul Cases', x = ~dates, y = ~yI.IHME.worst) %>% 
+      # add_lines(name = 'IHME Worst - Deaths'     , x = ~dates, y = ~yD.IHME.worst) %>% 
       layout(title = paste0(input$countryFinder,': Projection Over Time'),
              xaxis = list(title = "Dates"),
              yaxis = list(title = "Number of People", range=c(0,maxy)) )
@@ -132,21 +160,25 @@ shinyServer <- function(input, output) {
     maxy <- 10^floor(log10(maxy)) * ceiling(maxy/10^floor(log10(maxy)))
     
     p <- plot_ly(data=data) %>% 
-      add_markers(name = 'Actual - Active', x = ~dates, y = ~yA) %>%
-      add_markers(name = 'Actual - Deaths', x = ~dates, y = ~yD) %>%
-      add_lines(name = 'Exponential - Active', x = ~dates, y = ~yA.exp) %>% 
-      add_lines(name = 'SIR R0=1.05 - Active', x = ~dates, y = ~yA.SIR.R1.05) %>% 
-      add_lines(name = 'SIR R0=1.1 - Active', x = ~dates, y = ~yA.SIR.R1.1) %>% 
-      add_lines(name = 'SIR R0=1.15 - Active', x = ~dates, y = ~yA.SIR.R1.15) %>% 
-      add_lines(name = 'SIR R0=1.2 - Active', x = ~dates, y = ~yA.SIR.R1.2) %>% 
-      add_lines(name = 'SIR R0=1.3 - Active', x = ~dates, y = ~yA.SIR.R1.3) %>% 
+      add_markers(name = 'Actual - Daily Active', x = ~dates, y = ~yA) %>%
+      add_markers(name = 'Actual - Cumul Deaths', x = ~dates, y = ~yD) %>%
+      add_lines(name = 'Exponential - Daily Active', x = ~dates, y = ~yA.exp) %>% 
+      add_lines(name = 'SIR R0=1.05 - Daily Active', x = ~dates, y = ~yA.SIR.R1.05) %>% 
+      add_lines(name = 'SIR R0=1.1 - Daily Active', x = ~dates, y = ~yA.SIR.R1.1) %>% 
+      add_lines(name = 'SIR R0=1.15 - Daily Active', x = ~dates, y = ~yA.SIR.R1.15) %>% 
+      add_lines(name = 'SIR R0=1.2 - Daily Active', x = ~dates, y = ~yA.SIR.R1.2) %>% 
+      add_lines(name = 'SIR R0=1.3 - Daily Active', x = ~dates, y = ~yA.SIR.R1.3) %>% 
       # add_lines(name = 'SIR R0=1.5 - Active', x = ~dates, y = ~yA.SIR.R1.5) %>% 
       # add_lines(name = 'SIR R0=1.7 - Active', x = ~dates, y = ~yA.SIR.R1.7) %>% 
       # add_lines(name = 'SIR R0=1.9 - Active', x = ~dates, y = ~yA.SIR.R1.9) %>% 
       # add_lines(name = 'SIR R0=2.1 - Active', x = ~dates, y = ~yA.SIR.R2.1) %>% 
       # add_lines(name = 'SIR R0=2.3 - Active', x = ~dates, y = ~yA.SIR.R2.3) %>% 
-      add_lines(name = 'IHME - Cumul Cases', x = ~dates, y = ~yI.IHME) %>% 
-      add_lines(name = 'IHME - Deaths', x = ~dates, y = ~yD.IHME) %>% 
+      # add_lines(name = 'IHME Ref - Cumul Cases', x = ~dates, y = ~yI.IHME) %>% 
+      # add_lines(name = 'IHME Ref - Deaths'     , x = ~dates, y = ~yD.IHME) %>% 
+      # add_lines(name = 'IHME Best - Cumul Cases', x = ~dates, y = ~yI.IHME.best) %>% 
+      # add_lines(name = 'IHME Best - Deaths'     , x = ~dates, y = ~yD.IHME.best) %>% 
+      # add_lines(name = 'IHME Worst - Cumul Cases', x = ~dates, y = ~yI.IHME.worst) %>% 
+      # add_lines(name = 'IHME Worst - Deaths'     , x = ~dates, y = ~yD.IHME.worst) %>% 
       layout(title = paste0(input$countryFinder,': Projection Over Time'),
              xaxis = list(title = "Dates"),
              yaxis = list(title = "Number of People", range=c(0,maxy)) )
@@ -158,40 +190,57 @@ shinyServer <- function(input, output) {
     logPlot
   })
   
-
-  output$myPlot <- renderPlotly({
-    data <- GetModels()
-    
-    maxy <- max(data$yA.SIR.R2.3[!is.na(data$yA.SIR.R2.3)])
-    maxy <- 10^floor(log10(maxy)) * ceiling(maxy/10^floor(log10(maxy)))
-
-    p <- plot_ly(data=data) %>% 
-      add_markers(name = 'Actual - Cases', x = ~dates, y = ~yI) %>%
-      add_markers(name = 'Actual - Deaths', x = ~dates, y = ~yD) %>%
-      
-      add_lines(name = 'Exponential - Deaths', x = ~dates, y = ~yD.exp) %>% 
-      add_lines(name = 'IHME - Deaths', x = ~dates, y = ~yD.IHME) %>% 
-      # add_lines(name = 'SIR R0=1.05 - Deaths', x = ~dates, y = ~yR.SIR.R1.05) %>% 
-      # add_lines(name = 'SIR R0=1.1 - Deaths', x = ~dates, y = ~yR.SIR.R1.1) %>% 
-      # add_lines(name = 'SIR R0=1.2 - Deaths', x = ~dates, y = ~yR.SIR.R1.2) %>% 
-      
-      add_lines(name = 'Exponential - Cases', x = ~dates, y = ~yI.exp) %>% 
-      add_lines(name = 'IHME - Cases', x = ~dates, y = ~yI.IHME) %>% 
-      add_lines(name = 'SIR R0=1.05 - Cases', x = ~dates, y = ~yI.SIR.R1.05) %>% 
-      add_lines(name = 'SIR R0=1.1 - Cases', x = ~dates, y = ~yI.SIR.R1.1) %>% 
-      add_lines(name = 'SIR R0=1.2 - Cases', x = ~dates, y = ~yI.SIR.R1.2) %>% 
-
-      layout(title = paste0(input$countryFinder,': Cumulative Cases (Not removing deaths & recovered)'),
-             xaxis = list(title = "Dates"),
-             yaxis = list(title = "Number of People", range=c(0,maxy)) )
-    p
-    
-    maxy <- max(data$yA.SIR.R2.3[!is.na(data$yA.SIR.R2.3)])
-    maxy <- ceiling(log10(maxy))
-    logPlot <- p %>% layout(yaxis = list(type = "log", range=c(0,maxy)))
-    logPlot
-  })
-  
+  # ##### Raw plot #####  
+  # output$rawPlot.IHME <- renderPlotly({
+  #   data <- GetModels()
+  #   
+  #   maxy <- max(data$yA.SIR.R1.3[!is.na(data$yA.SIR.R1.3)])
+  #   maxy <- 10^floor(log10(maxy)) * ceiling(maxy/10^floor(log10(maxy)))
+  #   
+  #   p <- plot_ly(data=data) %>% 
+  #     add_markers(name = 'Actual - Daily Active', x = ~dates, y = ~yA) %>%
+  #     add_markers(name = 'Actual - Cumul Deaths', x = ~dates, y = ~yD) %>%
+  #     add_lines(name = 'IHME Ref - Est. Daily Active', x = ~dates, y = ~yI.IHME) %>% 
+  #     add_lines(name = 'IHME Ref - Cumul Deaths'     , x = ~dates, y = ~yD.IHME) %>% 
+  #     add_lines(name = 'IHME Best - Est. Daily Active', x = ~dates, y = ~yI.IHME.best) %>% 
+  #     add_lines(name = 'IHME Best - Cumul Deaths'     , x = ~dates, y = ~yD.IHME.best) %>% 
+  #     add_lines(name = 'IHME Worst - Est. Daily Active', x = ~dates, y = ~yI.IHME.worst) %>% 
+  #     add_lines(name = 'IHME Worst - Cumul Deaths'     , x = ~dates, y = ~yD.IHME.worst) %>% 
+  #     layout(title = paste0(input$countryFinder,': Projection Over Time'),
+  #            xaxis = list(title = "Dates"),
+  #            yaxis = list(title = "Number of People", range=c(0,maxy)) )
+  #   p
+  #   
+  # })
+  # 
+  # ##### Log plot #####    
+  # output$logPlot.IHME <- renderPlotly({
+  #   data <- GetModels()
+  #   
+  #   maxy <- max(data$yA.SIR.R1.3[!is.na(data$yA.SIR.R1.3)])
+  #   maxy <- 10^floor(log10(maxy)) * ceiling(maxy/10^floor(log10(maxy)))
+  #   
+  #   p <- plot_ly(data=data) %>% 
+  #     add_markers(name = 'Actual - Daily Active', x = ~dates, y = ~yA) %>%
+  #     add_markers(name = 'Actual - Cumul Deaths', x = ~dates, y = ~yD) %>%
+  #     add_lines(name = 'IHME Ref - Est. Daily Active', x = ~dates, y = ~yI.IHME) %>% 
+  #     add_lines(name = 'IHME Ref - Cumul Deaths'     , x = ~dates, y = ~yD.IHME) %>% 
+  #     add_lines(name = 'IHME Best - Est. Daily Active', x = ~dates, y = ~yI.IHME.best) %>% 
+  #     add_lines(name = 'IHME Best - Cumul Deaths'     , x = ~dates, y = ~yD.IHME.best) %>% 
+  #     add_lines(name = 'IHME Worst - Est. Daily Active', x = ~dates, y = ~yI.IHME.worst) %>% 
+  #     add_lines(name = 'IHME Worst - Cumul Deaths'     , x = ~dates, y = ~yD.IHME.worst) %>% 
+  #     layout(title = paste0(input$countryFinder,': Projection Over Time'),
+  #            xaxis = list(title = "Dates"),
+  #            yaxis = list(title = "Number of People", range=c(0,maxy)) )
+  #   p
+  #   
+  #   maxy <- max(data$yA.SIR.R2.3[!is.na(data$yA.SIR.R2.3)])
+  #   maxy <- ceiling(log10(maxy))
+  #   logPlot <- p %>% layout(yaxis = list(type = "log", range=c(0,maxy)))
+  #   logPlot
+  # })
+  # 
+  # 
   
   ##### DownloadTable ##### 
   output$downloadData <- downloadHandler(

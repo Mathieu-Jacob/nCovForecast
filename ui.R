@@ -35,6 +35,7 @@ shinyUI(fluidPage(
                       # Sidebar 
                       sidebarLayout(
                         sidebarPanel(
+                          p("Updated once a day around 8pm (EDT)"),
                           titlePanel("Location"),
                           selectInput(inputId = "countryFinder",
                                       label = "Select Region:",
@@ -63,6 +64,8 @@ shinyUI(fluidPage(
                         mainPanel(
                           plotlyOutput("rawPlot")
                           , plotlyOutput("logPlot")
+                          # , plotlyOutput("rawPlot.IHME")
+                          # , plotlyOutput("logPlot.IHME")
                           , htmlOutput("EventPlanner")
                           # , h3("In Development:")
                           # , plotlyOutput("myPlot")

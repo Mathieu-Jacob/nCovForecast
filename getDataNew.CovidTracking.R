@@ -64,8 +64,9 @@ getDataNew.CovidTracking <- function(){
     CountryTotal <- aggregate(x[, dCols], by = list(Country = x$Country.Region), FUN = sum)
     
     x <- x[x$Province.State %in% keep,]
-    Abbrev <- data.frame(Province.State = c("United States", "NY", "NJ", "PA", "CT", "SC", "MA", "FL", "ME", "CA"),
-                         Province.State.full = c("United States", "New York", "New Jersey", "Pennsylvania", "Connecticut", "South Carolina", "Massachusetts", "Florida", "Maine", "California"))
+    Abbrev <- data.frame(Province.State = c("United States", "NY", "NJ", "PA", "CT", "SC", "MA", "FL", "ME", "CA", "TX", "AL", "GA", "AZ"),
+                         Province.State.full = c("United States", "New York", "New Jersey", "Pennsylvania", "Connecticut", "South Carolina", "Massachusetts", "Florida", "Maine", "California",
+                                                 "Texas", "Alabama","Georgia","Arizona"))
     x <- left_join(x, Abbrev)
     x <- x[!is.na(x$Province.State),]
     

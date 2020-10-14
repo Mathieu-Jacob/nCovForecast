@@ -14,9 +14,9 @@ library("tidyverse")
 
 
 source("functions.R")
-source("getDataNew.JHU.R")
-source("getDataNew.CovidTracking.R")
-source("getDataNew.IHME.R")
+source("getDataNew.JHU.R") #canada
+source("getDataNew.CovidTracking.R") #US
+source("getDataNew.IHME.R") #IHME
 
 ########################################
 # 0 - Parameters
@@ -46,7 +46,11 @@ Region <- c(#"Canada",
   "Maine",
   "ME",
   "California",
-  "CA")
+  "CA",
+  "Texas",
+  "Alabama",
+  "Georgia",
+  "Arizona")
 
 Region.Keep<- c("Canada",
                 "Ontario",
@@ -80,8 +84,17 @@ Region.Keep<- c("Canada",
                 "ME",
                 "California",
                 "CA",
+                "Texas",
+                "TX",
+                "Alabama",
+                "AL",
+                "Georgia",
+                "GA",
+                "Arizona",
+                "AZ",
                 
-                "Singapore")
+                "Singapore",
+                "Brazil")
 
 
 ########################################
@@ -97,7 +110,7 @@ data.US <- fill.missing(data.US, missing.in.US, fill=NA)
 data.CA <- fill.missing(data.CA, missing.in.CA, fill=NA)
 
 data <- rbind(data.US, data.CA)
-data.IHME <- getDataNew.IHME()
+# data.IHME <- getDataNew.IHME()
 
 # 
 # data.US <- getDataNew.CovidTracking()
@@ -165,6 +178,14 @@ population <- c(14446515,
                 1345790,
                 39937489,
                 39937489,
+                29000000,
+                29000000,
+                4903000,
+                4903000,
+                10620000,
+                10620000,
+                7279000,
+                7279000,
                 5639000)
 Prov<- c("Ontario",
          "Quebec",
@@ -198,7 +219,24 @@ Prov<- c("Ontario",
          "ME",
          "California",
          "CA",
+         "Texas",
+         "TX",
+         "Alabama",
+         "AL",
+         "Georgia",
+         "GA",
+         "Arizona",
+         "AZ",
          "Singapore")
+
+
+
+
+
+
+
+
+
 population <- data.frame(Country=Prov,
                          population = population)
 
